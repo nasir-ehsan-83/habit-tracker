@@ -1,10 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 
-from app.core.config import settings
-from app.models.user import User
-from app.models.habit import Habit
-from app.core.logging import logger 
+from app.config.config import settings
+from app.models.users import User
+from app.models.habits import Habit
+from app.config.logging import logger 
 
 # Provide connection with MongoDB
 async def init_db():

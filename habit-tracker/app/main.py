@@ -13,8 +13,8 @@ from app.utils.limiter import limiter
 from app.db.database import init_db
 from app.routes import (
     auth, 
-    habit, 
-    user
+    habits, 
+    users
 )
 
 @asynccontextmanager
@@ -34,7 +34,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins = [
-        "http://localhost:3000",    # for react dev
+        "http://localhost:8000",    # for react dev
         "http://127.0.0.1:5500",    # for liveserver
         "https://www.google.com"    # for google
     ],
@@ -57,8 +57,5 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 # add routes from app/routes/
 app.include_router(auth.router)
-app.include_router(user.router)
-app.include_router(habit.router)
-
-if "__name__" == "__main__":
-    uvicorn.run(app, host = "127.0.0.1", port = 8000, reload = True)
+app.include_router(users.router)
+app.include_router(habits.router)
