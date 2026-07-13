@@ -7,9 +7,9 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.models.user import User
+from app.models.users import User
 from app.core.security import verify
-from app.core.logging import logger
+from app.config.logging import logger
 from app.core.oauth2 import (
     create_access_token,
     create_refresh_token,
@@ -17,7 +17,11 @@ from app.core.oauth2 import (
 )
 
 
-async def handle_login(response: Response, user_credential: OAuth2PasswordRequestForm) -> Dict:
+async def handle_login(
+    response: Response, 
+    user_credential: OAuth2PasswordRequestForm
+) -> Dict:
+
     try:
         # Get user from database
         user = await User.find_one(User.username == user_credential.username)
@@ -153,7 +157,10 @@ async def handle_refresh_token(request: Request) -> Dict:
         )
 
 
+
+
 async def handle_logout(request: Request):
+    
     refresh_token = request.cookies.get("jwt")
     response = Response(status_code = status.HTTP_204_NO_CONTENT)
 

@@ -4,39 +4,44 @@ from fastapi import (
     Response, 
     status
 )
+from beanie import BeanieObjectId
 from pymongo.errors import DuplicateKeyError
 from datetime import (
-    datetime, 
+    datetime,
+    time, 
     timezone
 )
-from app.models.habit import Habit
-from app.schemas.habit import (
+from app.models.habits import Habit
+from app.schemas.habits import (
     HabitCreate, 
     HabitUpdate
 )
-from app.core.logging import logger
+from app.config.logging import logger
 from app.schemas.token import TokenData
 from app.utils.pagination import paginate
 
 
-async def create_new_habit(habit_in: HabitCreate, current_user: TokenData) -> Habit:
+async def create_new_habit(
+    habit_in: HabitCreate, 
+    current_user: TokenData
+) -> Habit:
     try:
         # Check if the habit already exists for this specific owner
-        existing_habit = await Habit.find_one(
+        found_habit = await Habit.find_one(
             Habit.name == habit_in.name,
-            Habit.owner_id == current_user.id,
+            Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
         )
         
-        if existing_habit:
+        if found_habit:
             raise HTTPException(
                 status_code = status.HTTP_400_BAD_REQUEST,
                 detail = "Habit already exists"
             )
-
+        
         new_habit = Habit(
             **habit_in.model_dump(),
-            owner_id = current_user.id
+            owner_id = BeanieObjectId(current_user.id)
         )
 
         return await new_habit.insert()
@@ -58,16 +63,24 @@ async def create_new_habit(habit_in: HabitCreate, current_user: TokenData) -> Ha
         )
 
 
-async def get_all_habits_owner(current_user: TokenData, page: int = 1, limit: int = 10) -> List[Habit]:
+
+
+async def get_all_habits_owner(
+    current_user: TokenData, 
+    page: int = 1, 
+    limit: int = 10
+) -> List[Habit]:
     try:
         # Calculate skip and limit values
         skip, limit_val = paginate(page, limit)
         
         # Retrieve active habits belonging to the current user
-        return await Habit.find_all(
-            Habit.owner_id == current_user.id, 
+        habits = await Habit.find_all(
+            Habit.owner_id == BeanieObjectId(current_user.id), 
             Habit.status != "deleted"
         ).skip(skip).limit(limit_val).to_list()
+
+        return habits
 
     except Exception as error:
         logger.error(f"Unexpected error in get_all_habits_owner: {error}", exc_info = True)
@@ -78,7 +91,13 @@ async def get_all_habits_owner(current_user: TokenData, page: int = 1, limit: in
         )
 
 
-async def get_all_habits_admin(owner_id: Optional[str] = None, page: int = 1, limit: int = 10) -> List[Habit]:
+
+
+async def get_all_habits_admin(
+    owner_id: Optional[str] = None, 
+    page: int = 1, 
+    limit: int = 10
+) -> List[Habit]:
     try:
         # Calculate skip and limit values
         skip, limit_val = paginate(page, limit)
@@ -99,12 +118,17 @@ async def get_all_habits_admin(owner_id: Optional[str] = None, page: int = 1, li
         )
 
 
-async def get_habit_by_name(name: str, current_user: TokenData) -> Habit:
+
+
+async def get_habit_by_name(
+    name: str, 
+    current_user: TokenData
+) -> Habit:
     try:
         # Retrieve habit by name and specific owner
         existing_habit = await Habit.find_one(
             Habit.name == name,
-            Habit.owner_id == current_user.id,
+            Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"   
         )
 
@@ -127,12 +151,18 @@ async def get_habit_by_name(name: str, current_user: TokenData) -> Habit:
         )
 
 
-async def update_habit_by_name(name: str, update_habit: HabitUpdate, current_user: TokenData) -> Habit:
+
+
+async def update_habit_by_name(
+    name: str, 
+    update_habit: HabitUpdate, 
+    current_user: TokenData
+) -> Habit:
     try:
         # Fetch specific habit from database
         existing_habit = await Habit.find_one(
             Habit.name == name,
-            Habit.owner_id == current_user.id,
+            Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
         )
 
@@ -170,15 +200,20 @@ async def update_habit_by_name(name: str, update_habit: HabitUpdate, current_use
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
-        )
-    
+        )    
 
-async def delete_habit_by_name(name: str, current_user: TokenData):
+
+
+
+async def delete_habit_by_name(
+    name: str, 
+    current_user: TokenData
+):
     try:
         # Fetch specific habit from database
         existing_habit = await Habit.find_one(
             Habit.name == name,
-            Habit.owner_id == current_user.id,
+            Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
         )
         
