@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import (
     Depends, 
     HTTPException, 
@@ -5,7 +6,7 @@ from fastapi import (
 )
 from app.dependencies.current_user import get_current_user
 
-def require_role(*allowed_roles: str):
+def require_role(allowed_roles: List[str]):
     
     async def role_checker(current_user = Depends(get_current_user)):
         
@@ -15,6 +16,6 @@ def require_role(*allowed_roles: str):
                 detail = "Access denied"
             )
         
-        return current_user
+        return current_user.role
     
     return role_checker

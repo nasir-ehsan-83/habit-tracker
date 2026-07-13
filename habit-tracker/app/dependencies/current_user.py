@@ -6,7 +6,7 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.oauth2 import verify_access_token
-from app.models.user import User
+from app.models.users import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = "login")
 
@@ -19,8 +19,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     )
 
     # verify JWT access-token 
-    token_data = await verify_access_token(token,credential_exception)
-
+    return await verify_access_token(token,credential_exception)
+""" 
     # get user from database
     user = await User.get(token_data.id)
 
@@ -34,4 +34,5 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail = "User account is inactive"
         )
 
-    return user
+    return user 
+"""
