@@ -24,7 +24,7 @@ class User(Document):
     email: EmailStr  
     password: str
 
-    role: UserRole = UserRole.user
+    role: str = UserRole.user
     status: UserStatus = UserStatus.active
     
     created_at: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))

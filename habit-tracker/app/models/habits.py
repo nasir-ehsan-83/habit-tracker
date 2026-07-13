@@ -10,7 +10,7 @@ from pydantic import (
 )
 from beanie import (
     Document, 
-    PydanticObjectId
+    BeanieObjectId
 )
 from pymongo import (
     ASCENDING, 
@@ -22,10 +22,10 @@ from app.utils.enum import HabitStatus
 
 class Habit(Document):
     name: str = Field(min_length=1)
-    owner_id: PydanticObjectId
+    owner_id: BeanieObjectId
     status: HabitStatus = HabitStatus.pending
     
-    remind_time: time 
+    remind_time: time
     start_date: date
     end_date: date
     

@@ -22,11 +22,13 @@ class UserBase(BaseModel):
     )
     email: EmailStr
 
-class UserCreate(UserBase):
+class  UserCreate(UserBase):
     password: str = Field(min_length = 8)
 
 class UserPrivateOut(UserBase):
     id: Optional[str] = Field(None, alias = "_id")
+    role: UserRole
+    status: UserStatus
 
     model_config = ConfigDict(
         from_attributes = True, 
@@ -64,6 +66,7 @@ class UserUpdateBase(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
+    status: Optional[str] = None
 
 class UserUpdate(BaseModel):
     email: EmailStr
