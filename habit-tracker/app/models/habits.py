@@ -5,7 +5,8 @@ from datetime import (
     time
 )
 from pydantic import (
-    Field, 
+    Field,
+    field_serializer, 
     model_validator
 )
 from beanie import (
@@ -18,8 +19,6 @@ from pymongo import (
 )
 from app.utils.enum import HabitStatus
 
-
-
 class Habit(Document):
     name: str = Field(min_length=1)
     owner_id: BeanieObjectId
@@ -29,12 +28,15 @@ class Habit(Document):
     start_date: date
     end_date: date
     
-    created_at: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    @model_validator(mode = "after")
+    @field_serializer('remind_time')
+    def serialize_time(self, remind_time: time, _info):
+        return remind_time.strftime("%H:%M:%S")
+
+    @model_validator(mode="after")
     def validate_dates(self):
-        
         if self.end_date < self.start_date:
             raise ValueError("end_date cannot be before start_date")
         
@@ -45,10 +47,14 @@ class Habit(Document):
 
     class Settings:
         name = "habits"
+        
+        bson_encoders = {
+            time: lambda t: t.strftime("%H:%M:%S")
+        }
 
         indexes = [
             IndexModel(
                 [("name", ASCENDING), ("owner_id", ASCENDING)],
-                unique = True
+                unique=True
             )
         ]
