@@ -13,7 +13,7 @@ from app.models.users import User
 from app.schemas.users import UserCreate, UserUpdate
 from app.schemas.token import TokenData
 from app.utils.pagination import paginate
-from app.config.logging import logger 
+from app.config.logging_handler import logger 
 
 
 

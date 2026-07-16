@@ -4,7 +4,7 @@ from beanie import init_beanie
 from app.config.config import settings
 from app.models.users import User
 from app.models.habits import Habit
-from app.config.logging import logger 
+from app.config.logging_handler import logger 
 
 # Provide connection with MongoDB
 async def init_db():

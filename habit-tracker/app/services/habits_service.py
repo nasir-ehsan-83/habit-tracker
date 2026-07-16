@@ -16,7 +16,7 @@ from app.schemas.habits import (
     HabitCreate, 
     HabitUpdate
 )
-from app.config.logging import logger
+from app.config.logging_handler import logger
 from app.schemas.token import TokenData
 from app.utils.pagination import paginate
 

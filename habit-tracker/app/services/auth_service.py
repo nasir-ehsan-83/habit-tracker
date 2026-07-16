@@ -9,8 +9,8 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.models.users import User
 from app.core.security import verify
-from app.config.logging import logger
-from app.core.oauth2 import (
+from app.config.logging_handler import logger
+from app.core.jwt import (
     create_access_token,
     create_refresh_token,
     verify_refresh_token
