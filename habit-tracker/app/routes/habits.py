@@ -35,7 +35,7 @@ from app.services.habits_service import(
 
 
 router = APIRouter(
-    prefix = '/habits',
+    prefix = '/api/habits',
     tags = ["Habits"]
 )
 
@@ -48,8 +48,8 @@ router = APIRouter(
 )
 @limiter.limit('3/minute')
 async def create_habit(
+    request: Request,
     current_user: TokenData = Depends(get_current_user),
-    request: Request = Request(), 
     habit: HabitCreate = Body(...), 
 ) -> Habit:
     
@@ -61,7 +61,7 @@ async def create_habit(
 # get all habits of specific user by  owner access
 @router.get(
     '/', 
-    response_model = List[HabitAdminOut]
+    response_model = List[HabitPrivateOut]
 )
 async def get_habits_owner(
     current_user: TokenData = Depends(get_current_user), 
@@ -77,7 +77,7 @@ async def get_habits_owner(
 # get all habits of all usres by admin access
 @router.get(
     '/only-admin', 
-    response_model = List[HabitPrivateOut]
+    response_model = List[HabitAdminOut]
 )
 async def get_habits_admin(
     current_user: TokenData = Depends(get_current_user),
