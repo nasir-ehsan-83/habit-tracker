@@ -1,128 +1,114 @@
 # 🌐 Habit Tracker Service & Algorithm Lab
 
-A professional-grade backend service built with **FastAPI** and **MongoDB**, integrated with a curated collection of **Data Structures** and **Algorithm** implementations. This project demonstrates clean code principles, automated testing, and modular software architecture.
+A professional-grade backend ecosystem built with **FastAPI** and **MongoDB**, featuring a production-ready **Habit Tracking API** integrated with a high-performance **CS Fundamentals Lab**. This project showcases asynchronous architecture, clean code principles, and comprehensive system monitoring.
 
 ## 📑 Table of Contents
 - [Project Overview](#-project-overview)
+- [System Architecture](#-system-architecture)
 - [CS Fundamentals Lab](#-cs-fundamentals-lab)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
 - [Getting Started](#-getting-started)
+- [Monitoring & Logs](#-monitoring--logs)
 - [Testing](#-testing)
 - [Author & Support](#-author--support)
 
 ## 📊 Project Overview
 
-The **Habit Tracker** is a modular backend application designed to manage and track daily habits. It uses an asynchronous API-first approach with secure authentication and role-based access control.
+The **Habit Tracker** is a modular backend application designed for high-concurrency environments. It manages daily habits with an emphasis on data integrity and security.
 
-### Core Features:
-* 🔐 **JWT Authentication** with strict Access & Refresh Token rotation.
-* 🛡️ **Role-Based Access Control (RBAC)** distinguishing between standard Users and Admins.
-* ⚡ **Complete CRUD Operations** for habits, tracking history, and user profiles.
-* 🚏 **Rate Limiting & Security** built-in to prevent brute-force and DDoS attacks.
-* 📄 **Cursor/Offset Pagination** for handling large datasets efficiently.
-* 📝 **Structured Error Logging** for production monitoring and debugging.
-* 🚀 **Asynchronous Architecture:** Driven by FastAPI for high-speed request handling.
-* 🗄️ **Elegant ODM Integration:** Powered by Beanie with MongoDB for type-safe data modeling.
+### Key Features:
+* 🔐 **Advanced Auth:** JWT Authentication with strict Access/Refresh token rotation and expiration management.
+* 🛡️ **RBAC:** Multi-level access control (Standard User / Admin).
+* ⚡ **Performance:** Fully asynchronous I/O powered by FastAPI and Motor.
+* 🚏 **Security:** Integrated Rate Limiting (SlowAPI) to mitigate brute-force and DoS risks.
+* 📄 **Pagination:** Robust logic for handling large datasets via skip/limit filters.
+* 🗄️ **Schema Integrity:** Type-safe modeling using Beanie ODM and Pydantic v2.
 
 ## 📘 CS Fundamentals Lab
 
-This module contains high-performance implementations of core computer science concepts, serving as a foundational library for the service's logic.
+A dedicated library of high-performance implementations of core computer science concepts, optimized for educational and practical use.
 
-### 🔹 Algorithms
-* **Sorting & Searching:** Production-ready implementations of Merge Sort, Quick Sort, and Binary Search.
-* **Optimization:** Logic focused on minimizing time complexity \(O(n \log n)\) and reducing memory footprint.
-
-### 🔹 Data Structures
-* **Custom Models:** Stacks, Queues, and Linked Lists tailored for non-relational database data flows.
-* **Trees:** Hierarchical data structures alongside efficient traversal and search algorithms.
+* **Algorithms:** Production-grade implementations of Quick Sort, Merge Sort, and Binary Search with focus on \(O(n \log n)\) efficiency.
+* **Data Structures:** Custom-built Stacks, Queues, Linked Lists, and Tree Traversal algorithms designed for minimal memory overhead.
 
 ## 🛠 Tech Stack
 
-* **Backend Framework:** Python 3.10+, FastAPI, Beanie-ODM, Pydantic v2
-* **Database:** MongoDB
-* **Security:** JWT, Bcrypt, SlowAPI (Rate Limiting), CORS Middleware
-* **Quality Assurance:** Pytest, Pytest-Asyncio, Coverage.py
+* **Framework:** Python 3.12+, FastAPI, Beanie-ODM, Pydantic v2
+* **Database:** MongoDB 7.0+
+* **Infrastructure:** Docker, Docker Compose
+* **Security:** JWT (python-jose), Bcrypt (passlib), SlowAPI
+* **Logging:** Structured Rotating File Logging
 
 ## 📁 Project Structure
 
 ```text
 habit-tracker-service/
-├── data_structure_algorithm/
-│   ├── algorithms/
-│   ├── data_structures/
-│   └── tests/
-├── habit-tracker/
-│   ├── app/
-│   │   ├── core/
-│   │   ├── db/
-│   │   ├── dependencies/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── schemas/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   └── main.py
-│   ├── fastapi_offline_docs/
-│   └── requirements.txt
-├── LICENSE
-└── README.md
+├── app/                        # FastAPI Application
+│   ├── config/                 # Settings & Logging Setup
+│   ├── core/                   # Security & JWT Logic
+│   ├── db/                     # Database Initialization
+│   ├── dependencies/           # Auth & Role Guards
+│   ├── models/                 # Beanie (MongoDB) Models
+│   ├── routes/                 # API Endpoints (Habits, Users, Auth)
+│   ├── schemas/                # Pydantic Validation Schemas
+│   ├── services/               # Core Business Logic
+│   ├── utils/                  # Enums, Limiters & Pagination
+│   └── main.py                 # App Entry Point
+├── data_structure_algorithm/   # CS Fundamentals Module
+├── logs/                       # Rotating Log Files (Generated)
+├── tests/                      # Automated Test Suite
+├── Dockerfile                  # API Containerization
+├── docker-compose.yaml         # Multi-container Orchestration
+└── run.py                      # Custom Execution Script
 ```
 
 ## 🚀 Getting Started
 
-### Prerequisites
-* Python 3.10 or higher installed.
-* MongoDB server running locally (localhost:27017) or an Atlas URI cloud instance.
-
-### Installation & Setup
-1. **Clone the repository:**
+### Installation
+1. **Clone & Enter:**
    ```bash
    git clone https://github.com
-   cd habit-tracker-service/backend
+   cd habit-tracker-service
    ```
 
-2. **Establish virtual environment:**
+2. **Run with Docker (Recommended):**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Manual Setup:**
    ```bash
    python -m venv venv
    source venv/bin/activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install --upgrade pip
    pip install -r requirements.txt
+   python run.py
    ```
 
-4. **Spin up the service:**
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
+## 📝 Monitoring & Logs
 
-5. **Explore interactive API documentation:**
-   * Swagger UI: http://localhost:8000/docs
-   * ReDoc: http://localhost:8000/redoc
+The system features a **Professional Logging Engine** located in the `/logs` directory (outside the app core for security). It automatically rotates files when they reach 5MB.
+
+*   `security_audit.log`: Tracks login attempts and token expirations (Warning level).
+*   `errors.log`: Captures system exceptions and database failures (Error level).
+*   `critical.log`: High-priority infrastructure alerts.
 
 ## 🧪 Testing
-Automated test suites guarantee database operations and analytical algorithmic modules operate seamlessly.
+We maintain high reliability through rigorous unit testing.
 
 ```bash
-# Run all tests sequentially
+# Run all tests
 pytest
 
-# Target testing explicitly at core sorting algorithms
+# Test specific module
 pytest data_structure_algorithm/tests/test_sorting.py
-
-# Check test statement block coverage metrics
-pytest --cov=app --cov=data_structure_algorithm --cov-report=term-missing
 ```
 
 ## 👨‍💻 Author
 **Nasir Ahmad Ehsan**
-* Backend Developer & AI Enthusiast
-* GitHub Profile: @nasir-ehsan-83
+* Backend Engineer & AI Enthusiast
+* Specialized in FastAPI, Rust, and Scalable Systems.
+* GitHub: [@nasir-ehsan-83](https://github.com)
 
 ## ⭐ Support
-If this engine accelerated your architecture stack, consider leaving a ⭐ on GitHub!
-
-Built with ❤️ using FastAPI and Beanie ODM
+If this architecture helped your workflow, please consider giving it a ⭐ on GitHub!

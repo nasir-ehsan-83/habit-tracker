@@ -33,7 +33,9 @@ venv.bak/
 *.swo
 
 # Logs
+logs/
 *.log
+
 
 # Docker
 mongo_data/
