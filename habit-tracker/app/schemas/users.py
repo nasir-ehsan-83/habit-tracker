@@ -1,4 +1,5 @@
 from typing import Optional
+from beanie import BeanieObjectId
 from pydantic import (
     BaseModel, 
     EmailStr, 
@@ -7,9 +8,11 @@ from pydantic import (
     field_validator
 )
 from datetime import datetime
-from bson import ObjectId 
 
-from app.utils.enum import UserStatus, UserRole
+from app.utils.enum import (
+    UserStatus, 
+    UserRole
+)
 
 class UserBase(BaseModel):
     name: str = Field(
@@ -26,7 +29,7 @@ class  UserCreate(UserBase):
     password: str = Field(min_length = 8)
 
 class UserPrivateOut(UserBase):
-    id: Optional[str] = Field(None, alias = "_id")
+    id: Optional[BeanieObjectId] = Field(None, alias = "_id")
     role: UserRole
     status: UserStatus
 
@@ -38,12 +41,12 @@ class UserPrivateOut(UserBase):
     @field_validator("id", mode = "before")
     @classmethod
     def convert_objectid(cls, v):
-        if isinstance(v, ObjectId):
+        if isinstance(v, BeanieObjectId):
             return str(v)
         return v
     
 class UserAdminOut(UserBase):
-    id: str = Field(alias = "_id")
+    id: BeanieObjectId = Field(alias = "_id")
     status: UserStatus
     role: UserRole
     created_at: datetime
@@ -57,7 +60,7 @@ class UserAdminOut(UserBase):
     @field_validator("id", mode = "before")
     @classmethod
     def convert_objectid(cls, v):
-        if isinstance(v, ObjectId):
+        if isinstance(v, BeanieObjectId):
             return str(v)
         return v 
     

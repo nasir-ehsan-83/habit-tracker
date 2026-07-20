@@ -1,4 +1,5 @@
 from typing import Optional
+from beanie import BeanieObjectId
 from pydantic import (
     BaseModel, 
     ConfigDict, 
@@ -25,8 +26,8 @@ class HabitPrivateOut(HabitBase):
     pass
 
 class HabitAdminOut(HabitBase):
-    _id: int
-    owner_id: int
+    _id: BeanieObjectId
+    owner_id: BeanieObjectId
     created_at: date
     updated_at: date
 
