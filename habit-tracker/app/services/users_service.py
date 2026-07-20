@@ -124,10 +124,18 @@ async def get_user_by_email(
 
 
 # Update explicit profile entries using input payload data (Owner privileged access)
-async def update_user_by_email(
+async def update_user_by_id(
     id: int, 
-    data: UserUpdate
+    data: UserUpdate,
+    current_user: TokenData
 ) -> User:
+    
+    if BeanieObjectId(id) != BeanieObjectId(current_user.id):
+        raise HTTPException(
+            status_code = status.HTTP_404_NOT_FOUND,
+            detail = "Unauthorized"
+        )
+    
     try:
         user = await User.find_one(
             User.id == BeanieObjectId(id),
@@ -141,7 +149,7 @@ async def update_user_by_email(
             )
         
         # Strip out omitted fields or explicitly declared null properties
-        update_data = data.update_data.model_dump(
+        update_data = data.model_dump(
             exclude_unset = True, 
             exclude_none = True
         )
@@ -176,7 +184,17 @@ async def update_user_by_email(
 
 
 # soft-delete a targeted registration target
-async def delete_user_by_email(id: int):
+async def delete_user_id(
+    id: int, 
+    current_user: TokenData
+):
+    
+    if BeanieObjectId(id) != BeanieObjectId(current_user.id):
+        raise HTTPException(
+            status_code = status.HTTP_404_NOT_FOUND,
+            detail = "Unauthorized"
+        )
+    
     try:
         user = await User.find_one(
             User.id == BeanieObjectId(id),
@@ -190,11 +208,7 @@ async def delete_user_by_email(id: int):
             )
         
         # Modify active registry context parameters instead of issuing hard-drops
-        await user.update({
-            "$set": {
-                "status": "deleted"
-            }
-        })
+        await user.delete()
 
         return Response(status_code = status.HTTP_204_NO_CONTENT)
     

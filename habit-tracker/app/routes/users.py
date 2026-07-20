@@ -1,3 +1,4 @@
+from beanie import BeanieObjectId
 from fastapi import (
     APIRouter,
     Body, 
@@ -23,8 +24,8 @@ from app.services.users_service import (
     create_user, 
     get_all_users,
     get_user_by_email, 
-    update_user_by_email, 
-    delete_user_by_email
+    update_user_by_id, 
+    delete_user_id
 )
 
 
@@ -93,11 +94,11 @@ async def get_user_email(
 )
 async def update_user(
     current_user: TokenData = Depends(get_current_user),
-    id: int = Path(gt = 0),
+    id: BeanieObjectId = Path(),
     user_data: UserUpdate = Body(...)
 ) -> User :
 
-    return await update_user_by_email(id, user_data)
+    return await update_user_by_id(id, user_data, current_user)
 
 
 
@@ -108,7 +109,7 @@ async def update_user(
 )
 async def delete_user(
     current_user: TokenData = Depends(get_current_user),
-    id: int = Path(gt = 0)
+    id: BeanieObjectId = Path()
 ):
 
-    return await delete_user_by_email(id)
+    return await delete_user_id(id, current_user)
