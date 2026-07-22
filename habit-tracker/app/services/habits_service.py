@@ -73,7 +73,7 @@ async def get_all_habits_owner(
     try:
         # Calculate skip and limit values
         skip, limit_val = paginate(page, limit)
-        
+
         # Retrieve active habits belonging to the current user
         habits = await Habit.find_all(
             Habit.owner_id == BeanieObjectId(current_user.id), 
