@@ -15,4 +15,4 @@ COPY /app ./app
 EXPOSE 8000
 
 # Command to run the application using uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "run.py"]
