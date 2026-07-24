@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from beanie import init_beanie
+from beanie import init_beanie # type: ignore
 
 from app.config.config import settings
 from app.models.users import User
@@ -9,7 +9,7 @@ from app.config.logging_handler import logger
 # Provide connection with MongoDB
 async def init_db():
     try:
-        client = AsyncIOMotorClient(settings.MONGO_URL)
+        client = AsyncIOMotorClient(settings.MONGO_URL) # type: ignore
 
         await init_beanie(
             database = client[settings.DATABASE_NAME],

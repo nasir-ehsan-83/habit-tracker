@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Any, Dict
 from fastapi import (
     HTTPException,
     Request,
@@ -20,11 +20,11 @@ from app.core.jwt import (
 async def handle_login(
     response: Response, 
     user_credential: OAuth2PasswordRequestForm
-) -> Dict:
+) -> Dict[str, str]:
 
     try:
         # Get user from database
-        user = await User.find_one(User.username == user_credential.username)
+        user = await User.find_one(User.username == user_credential.username) # type: ignore
 
         # If user not found
         if not user:
@@ -63,7 +63,7 @@ async def handle_login(
         })
 
         # Add refresh token to database
-        await user.update({
+        await user.update({ # type: ignore
             "$set": {
                 "refresh_token": refresh_token
             }
@@ -95,7 +95,7 @@ async def handle_login(
         )
 
 
-async def handle_refresh_token(request: Request) -> Dict:
+async def handle_refresh_token(request: Request) -> Dict[str, str]:
     try:
         # Get refresh-token from cookies
         refresh_token = request.cookies.get("jwt")
@@ -107,10 +107,10 @@ async def handle_refresh_token(request: Request) -> Dict:
                 detail = "Refresh token not found"
             )
 
-        payload = await verify_refresh_token(refresh_token)
+        payload: Dict[str, Any] | HTTPException = await verify_refresh_token(refresh_token)
 
         # Get user from database
-        user = await User.get(payload["id"])
+        user: User = await User.get(payload["id"]) # type: ignore
 
         # If user not found
         if not user:
@@ -138,8 +138,8 @@ async def handle_refresh_token(request: Request) -> Dict:
 
         # Create new JWT access-token
         access_token = await create_access_token({
-            "id": payload["id"],
-            "role": payload["role"]
+            "id": payload["id"], # type: ignore
+            "role": payload["role"] # type: ignore
         })
 
         return {
@@ -159,7 +159,7 @@ async def handle_refresh_token(request: Request) -> Dict:
 
 
 
-async def handle_logout(request: Request):
+async def handle_logout(request: Request) -> Response:
     
     refresh_token = request.cookies.get("jwt")
     response = Response(status_code = status.HTTP_204_NO_CONTENT)
@@ -170,10 +170,10 @@ async def handle_logout(request: Request):
 
     try:
         payload = await verify_refresh_token(refresh_token)
-        user = await User.get(payload["id"])
+        user = await User.get(payload["id"]) # type: ignore
         
         if user:
-            await user.update({
+            await user.update({ # type: ignore
                 "$set": {
                     "refresh_token": None
                 }

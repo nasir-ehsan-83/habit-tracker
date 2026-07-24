@@ -125,7 +125,7 @@ async def get_user_by_email(
 
 # Update explicit profile entries using input payload data (Owner privileged access)
 async def update_user_by_id(
-    id: int, 
+    id: BeanieObjectId, 
     data: UserUpdate,
     current_user: TokenData
 ) -> User:
@@ -185,9 +185,9 @@ async def update_user_by_id(
 
 # soft-delete a targeted registration target
 async def delete_user_id(
-    id: int, 
+    id: BeanieObjectId, 
     current_user: TokenData
-):
+) -> Response:
     
     if BeanieObjectId(id) != BeanieObjectId(current_user.id):
         raise HTTPException(

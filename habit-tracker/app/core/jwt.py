@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
-from typing import Dict
+from typing import Any, Dict
+from beanie import BeanieObjectId
 from jose import jwt, JWTError, ExpiredSignatureError
 from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
@@ -9,15 +10,21 @@ from app.config.logging_handler import logger
 
 
 
-ACCESS_SECRET_KEY = settings.ACCESS_SECRET_KEY
-REFRESH_SECRET_KEY = settings.REFRESH_SECRET_KEY
-ALGORITHM = settings.ALGORITHM
-ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-REFRESH_TOKEN_EXPIRE_DAYS = settings.REFRESH_TOKEN_EXPIRE_DAYS
+ACCESS_SECRET_KEY: str = settings.ACCESS_SECRET_KEY
+REFRESH_SECRET_KEY: str = settings.REFRESH_SECRET_KEY
+
+ALGORITHM: str = settings.ALGORITHM
+
+ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS: int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 
 
-async def create_access_token(data: Dict):
+
+async def create_access_token(
+    data: Dict[str, str | int | datetime]
+) -> str:
+
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire, "type": "access"})
@@ -26,15 +33,25 @@ async def create_access_token(data: Dict):
 
 
 
-async def verify_access_token(token: str, credentials_exception):
+
+async def verify_access_token(
+    token: str, 
+    credentials_exception: HTTPException
+) -> TokenData:
+
     try:
-        payload = await run_in_threadpool(jwt.decode, token, ACCESS_SECRET_KEY, [ALGORITHM])
+        payload: Dict[str, Any] = await run_in_threadpool(
+            jwt.decode, 
+            token, 
+            ACCESS_SECRET_KEY, 
+            [ALGORITHM]
+        )
         
         if payload.get("type") != "access":
             raise credentials_exception
         
-        id = payload.get("id")
-        role = payload.get("role")
+        id: BeanieObjectId | None = payload.get("id")
+        role: str | None = payload.get("role")
         
         if not id or not role:
             raise credentials_exception
@@ -64,24 +81,42 @@ async def verify_access_token(token: str, credentials_exception):
 
 
 
-async def create_refresh_token(data: Dict):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
+
+async def create_refresh_token(
+    data: Dict[str, str | int | datetime]
+) -> str:
+
+    to_encode: Dict[str, str | int | datetime] = data.copy()
+    expire: datetime = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
     
-    return await run_in_threadpool(jwt.encode, to_encode, REFRESH_SECRET_KEY, ALGORITHM)
+    to_encode.update({
+        "exp": expire, 
+        "type": "refresh"
+    })
+    
+    return await run_in_threadpool(
+        jwt.encode, 
+        to_encode, 
+        REFRESH_SECRET_KEY, 
+        ALGORITHM
+    )
 
 
 
-async def verify_refresh_token(token: str):
+async def verify_refresh_token(
+    token: str,
+    credentials_exception: HTTPException = HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Invalid refresh token")
+) -> Dict[str, Any]:
     try:
-        payload = await run_in_threadpool(jwt.decode, token, REFRESH_SECRET_KEY, [ALGORITHM])
+        payload: Dict[str, Any] = await run_in_threadpool(
+            jwt.decode, 
+            token, 
+            REFRESH_SECRET_KEY, 
+            [ALGORITHM]
+        )
     
         if payload.get("type") != "refresh":
-            raise HTTPException(
-                status_code = status.HTTP_401_UNAUTHORIZED, 
-                detail = "Invalid refresh token"
-            )
+            raise credentials_exception
     
         return payload
     
@@ -96,10 +131,7 @@ async def verify_refresh_token(token: str):
     except JWTError as error:
         logger.error(f"JWT-Refresh-Token Error: {error}", exc_info = True)
         
-        raise HTTPException(
-            status_code = status.HTTP_401_UNAUTHORIZED, 
-            detail = "Invalid refresh token"
-        )
+        raise credentials_exception
     
     except Exception as error:
         logger.error(f"Unexpected Refresh-Token Exception: {error}", exc_info = True)

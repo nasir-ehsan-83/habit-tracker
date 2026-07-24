@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from fastapi import (
     HTTPException, 
     Response, 
@@ -8,7 +8,6 @@ from beanie import BeanieObjectId
 from pymongo.errors import DuplicateKeyError
 from datetime import (
     datetime,
-    time, 
     timezone
 )
 from app.models.habits import Habit
@@ -27,7 +26,7 @@ async def create_new_habit(
 ) -> Habit:
     try:
         # Check if the habit already exists for this specific owner
-        found_habit = await Habit.find_one(
+        found_habit: Habit | None = await Habit.find_one(
             Habit.name == habit_in.name,
             Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
@@ -38,8 +37,13 @@ async def create_new_habit(
                 status_code = status.HTTP_400_BAD_REQUEST,
                 detail = "Habit already exists"
             )
+        if found_habit:
+            raise HTTPException(
+                status_code = status.HTTP_400_BAD_REQUEST,
+                detail = "Habit already exists"
+            )
         
-        new_habit = Habit(
+        new_habit: Habit = Habit(
             **habit_in.model_dump(),
             owner_id = BeanieObjectId(current_user.id)
         )
@@ -75,7 +79,7 @@ async def get_all_habits_owner(
         skip, limit_val = paginate(page, limit)
 
         # Retrieve active habits belonging to the current user
-        habits = await Habit.find_all(
+        habits: List[Habit] = await Habit.find_all(
             Habit.owner_id == BeanieObjectId(current_user.id), 
             Habit.status != "deleted"
         ).skip(skip).limit(limit_val).to_list()
@@ -94,7 +98,7 @@ async def get_all_habits_owner(
 
 
 async def get_all_habits_admin(
-    owner_id: Optional[str] = None, 
+    owner_id:BeanieObjectId | None = None, 
     page: int = 1, 
     limit: int = 10
 ) -> List[Habit]:
@@ -208,7 +212,7 @@ async def update_habit_by_name(
 async def delete_habit_by_name(
     name: str, 
     current_user: TokenData
-):
+) -> Response:
     try:
         # Fetch specific habit from database
         existing_habit = await Habit.find_one(

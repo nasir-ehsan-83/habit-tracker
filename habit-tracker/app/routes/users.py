@@ -61,8 +61,8 @@ async def create_new_user(
     response_model = List[UserAdminOut]
 )
 async def get_users(
-    current_user = Depends(get_current_user),
-    user = Depends(require_role("admin")), 
+    current_user: TokenData = Depends(get_current_user),
+    user: str = Depends(require_role(["admin"])), 
     page: int = Query(gt = 0, default = 1), 
     limit: int = Query(gt = 0, default = 10)
 ) -> List[User]:

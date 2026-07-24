@@ -32,7 +32,7 @@ class Habit(Document):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @field_serializer('remind_time')
-    def serialize_time(self, remind_time: time, _info):
+    def serialize_time(self, remind_time: time):
         return remind_time.strftime("%H:%M:%S")
 
     @model_validator(mode="after")
@@ -48,8 +48,8 @@ class Habit(Document):
     class Settings:
         name = "habits"
         
-        bson_encoders = {
-            time: lambda t: t.strftime("%H:%M:%S")
+        bson_encoders = {  # type: ignore
+            time: lambda t: t.strftime("%H:%M:%S")  # type: ignore
         }
 
         indexes = [

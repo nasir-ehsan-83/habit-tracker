@@ -81,7 +81,7 @@ async def get_habits_owner(
 )
 async def get_habits_admin(
     current_user: TokenData = Depends(get_current_user),
-    user = Depends(require_role(["admin"])),
+    user: str = Depends(require_role(["admin"])),
     owner_id: Optional[BeanieObjectId] = Query(gt = 0), 
     page: int = Query(default = 1, gt = 0), 
     limit: int = Query(default = 10, gt = 0), 
