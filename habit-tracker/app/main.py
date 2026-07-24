@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import uvicorn
 from fastapi import (
     FastAPI,
     Request,
@@ -10,6 +9,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.utils.limiter import limiter
+from app.core.cors import cors
 from app.db.database import init_db
 from app.routes import (
     auth, 
@@ -23,8 +23,6 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(
-    docs_url = False, 
-    redoc_url = False, 
     lifespan = lifespan
 )
 
@@ -33,14 +31,7 @@ app = FastAPI(
 # add cors middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = [
-        "http://localhost:8000",    # for react dev
-        "http://127.0.0.1:5500",    # for liveserver
-        "https://www.google.com"    # for google
-    ],
-    allow_credentials = True,
-    allow_methods = ["GET", "POST", "DELETE", "PATCH", "PUT"],
-    allow_headers = ["*"]
+    **cors
 )
 
 # add rate-limit
