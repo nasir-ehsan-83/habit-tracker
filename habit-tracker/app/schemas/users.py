@@ -40,10 +40,8 @@ class UserPrivateOut(UserBase):
 
     @field_validator("id", mode = "before")
     @classmethod
-    def convert_objectid(cls, v):
-        if isinstance(v, BeanieObjectId):
-            return str(v)
-        return v
+    def convert_objectid(cls, v: BeanieObjectId):
+        return str(v)
     
 class UserAdminOut(UserBase):
     id: BeanieObjectId = Field(alias = "_id")
@@ -59,10 +57,8 @@ class UserAdminOut(UserBase):
 
     @field_validator("id", mode = "before")
     @classmethod
-    def convert_objectid(cls, v):
-        if isinstance(v, BeanieObjectId):
-            return str(v)
-        return v 
+    def convert_objectid(cls, v: BeanieObjectId):
+        return str(v) 
     
 class UserUpdate(BaseModel):
     name: Optional[str] = None

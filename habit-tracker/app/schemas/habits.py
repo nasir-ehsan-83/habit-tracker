@@ -37,9 +37,9 @@ class HabitAdminOut(HabitBase):
     )
 
 class HabitUpdate(BaseModel):
-    name: Optional[str] = Field(
+    name: str | None = Field(
         default = None, 
-        min_lenght = 3, 
+        min_length = 3,
         max_length = 50
     )
     status: Optional[HabitStatus] = Field(default = None)

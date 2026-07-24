@@ -1,3 +1,4 @@
+from beanie import BeanieObjectId
 from pydantic import BaseModel
 
 class Token(BaseModel):
@@ -5,5 +6,5 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    id: int
+    id: BeanieObjectId
     role: str
