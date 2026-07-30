@@ -25,7 +25,7 @@ async def create_new_habit(
     current_user: TokenData
 ) -> Habit:
     try:
-        # Check if the habit already exists for this specific owner
+        
         found_habit: Habit | None = await Habit.find_one(
             Habit.name == habit_in.name,
             Habit.owner_id == BeanieObjectId(current_user.id),
@@ -48,7 +48,7 @@ async def create_new_habit(
             owner_id = BeanieObjectId(current_user.id)
         )
 
-        return await new_habit.insert()
+        return await new_habit.insert() # type: ignore
 
     except HTTPException:
         raise
@@ -69,53 +69,37 @@ async def create_new_habit(
 
 
 
-async def get_all_habits_owner(
-    current_user: TokenData, 
+async def get_all_habits(
+    id: BeanieObjectId, 
+    category: str = "",
+    completed: bool = False,
     page: int = 1, 
     limit: int = 10
 ) -> List[Habit]:
     try:
-        # Calculate skip and limit values
+        
         skip, limit_val = paginate(page, limit)
 
-        # Retrieve active habits belonging to the current user
-        habits: List[Habit] = await Habit.find_all(
-            Habit.owner_id == BeanieObjectId(current_user.id), 
-            Habit.status != "deleted"
-        ).skip(skip).limit(limit_val).to_list()
+        habits: List[Habit]
 
+        if completed:
+            habits: List[Habit] = await Habit.find_all(
+                Habit.owner_id == BeanieObjectId(id), 
+                Habit.status == "completed",
+                Habit.category == category # type: ignore
+            ).skip(skip).limit(limit_val).sort("created_at").to_list() # type: ignore
+
+        else:
+            habits: List[Habit] = await Habit.find_all(
+                Habit.owner_id == BeanieObjectId(id), 
+                Habit.status != "deleted"
+            ).skip(skip).limit(limit_val).sort("created_at").to_list()
+        
         return habits
 
     except Exception as error:
         logger.error(f"Unexpected error in get_all_habits_owner: {error}", exc_info = True)
         
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-
-
-
-
-async def get_all_habits_admin(
-    owner_id:BeanieObjectId | None = None, 
-    page: int = 1, 
-    limit: int = 10
-) -> List[Habit]:
-    try:
-        # Calculate skip and limit values
-        skip, limit_val = paginate(page, limit)
-        
-        if owner_id is not None:
-            return await Habit.find_all(
-                Habit.owner_id == owner_id
-            ).skip(skip).limit(limit_val).to_list()
-
-        # Retrieve all habits across all users
-        return await Habit.find_all().skip(skip).limit(limit_val).to_list()
-    
-    except Exception as error:
-        logger.error(f"Unexpected error in get_all_habits_admin: {error}", exc_info = True)
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
