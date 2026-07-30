@@ -24,8 +24,9 @@ from app.schemas.habits import (
 )
 from app.services.habits_service import(
     create_new_habit,
-    get_all_habits,
     get_habit,
+    get_all_habits,
+    get_habits_by_category,
     update_habit,
     delete_habit
 )
@@ -87,6 +88,21 @@ async def get_habit_id(
 ) -> Habit:
 
     return await get_habit(id, current_user)
+
+
+
+
+@router.get(
+    '/category/{category}',
+    response_model = HabitPrivateOut
+)
+async def get_habit_category(
+    current_user: TokenData = Depends(get_current_user), 
+    user_role: str = Depends(require_role(["USER"])), 
+    category: HabitCategory = Path()
+) -> List[Habit]:
+    
+    return await get_habits_by_category(current_user.id, category)
 
 
 

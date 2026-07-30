@@ -17,6 +17,7 @@ from app.schemas.habits import (
 )
 from app.config.logging_handler import logger
 from app.schemas.token import TokenData
+from app.utils.enum import HabitCategory
 from app.utils.pagination import paginate
 
 
@@ -71,7 +72,7 @@ async def create_new_habit(
 
 async def get_all_habits(
     id: BeanieObjectId, 
-    category: str = "",
+    category: HabitCategory | str = "",
     completed: bool = False,
     page: int = 1, 
     limit: int = 10
@@ -133,10 +134,35 @@ async def get_habit(
     
     except Exception as error:
         logger.error(f"Unexpected error in get_habit_by_name: {error}", exc_info = True)
+        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+
+
+
+
+async def get_habits_by_category(
+    id: BeanieObjectId,
+    category: HabitCategory
+) -> List[Habit]:
+    
+    try:
+        return await Habit.find_all(
+            Habit.owner_id == BeanieObjectId(id), 
+            Habit.status != "deleted",
+            Habit.category == category # type: ignore
+        ).sort("created_at").to_list()
+
+    except Exception as error:
+        logger.error(f"Unexpected error in get_habit_by_name: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+
 
 
 
