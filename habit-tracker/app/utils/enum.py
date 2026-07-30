@@ -1,16 +1,17 @@
 from enum import Enum
 
 class UserRole(str, Enum):
-    user = "user"
-    admin = "admin"
+    user    = "user"
+    admin   = "admin"
 
 class UserStatus(str, Enum):
-    active = "active"
+    active  = "active"
     deleted = "deleted"
+    block   = "block"
 
 class HabitStatus(str, Enum):
-    pending = "pending"
-    completed = "completed"
-    skipped = "skipped"
-    deleted = "deleted"
-
+    pending     = "pending"
+    completed   = "completed"
+    skipped     = "skipped"
+    deleted     = "deleted"
+    archived    = "archived"
