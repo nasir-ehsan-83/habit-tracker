@@ -11,7 +11,12 @@ from app.dependencies.check_roles import require_role
 from app.models.users import User
 from app.schemas.users import UserAdminOut
 from app.schemas.token import TokenData
-from app.services.admin_service import block_user, get_all_users
+from app.services.admin_service import (
+    block_user, 
+    get_all_users, 
+    get_one_user
+)
+
 
 
 
@@ -19,6 +24,7 @@ router: APIRouter = APIRouter(
     prefix = '/api/admin',
     tags = ["Admin"]
 )
+
 
 
 
@@ -35,6 +41,22 @@ async def get_users(
 ) -> List[User]:
     
     return await get_all_users(is_actived, page, limit)
+
+
+
+
+@router.get(
+    '/users/{user_id}',
+    response_model = UserAdminOut
+)
+async def get_user(
+    current_user: TokenData = Depends(get_current_user),
+    user: TokenData = Depends(require_role(["ADMIN"])),
+    user_id: BeanieObjectId = Path()
+) -> User | None:
+    
+    return await get_one_user(user_id)
+
 
 
 
