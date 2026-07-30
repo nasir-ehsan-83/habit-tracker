@@ -8,7 +8,7 @@ from fastapi import (
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from typing import Annotated
 
-from app.schemas.token import Token
+from app.schemas.token import Token, TokenData
 from app.models.users import User
 from app.schemas.users import (
     UserCreate,
@@ -19,7 +19,8 @@ from app.services.auth_service import (
     handle_create_user,
     handle_login, 
     handle_refresh_token, 
-    handle_logout
+    handle_logout,
+    handle_delete_user,
 )
 
 router = APIRouter(
@@ -80,3 +81,15 @@ async def logout(
 ):
 
     return await handle_logout(request)
+
+
+
+
+@router.delete(
+    '/delete-account'
+)
+async def delete_account(
+    request: Request
+):
+
+    return await handle_delete_user(request)
