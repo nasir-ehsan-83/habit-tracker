@@ -2,14 +2,21 @@ from fastapi import (
     APIRouter, 
     Depends, 
     Request, 
-    Response
+    Response,
+    Body
 )
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from typing import Annotated
 
 from app.schemas.token import Token
+from app.models.users import User
+from app.schemas.users import (
+    UserCreate,
+    UserPrivateOut
+)
 from app.utils.limiter import limiter
 from app.services.auth_service import (
+    handle_create_user,
     handle_login, 
     handle_refresh_token, 
     handle_logout
@@ -19,6 +26,24 @@ router = APIRouter(
     prefix = "/api/auth",
     tags = ["Authentication"]
 )
+
+
+
+
+@router.post(
+    '/register', 
+    response_model = UserPrivateOut
+)
+@limiter.limit('3/minute')
+async def create_new_user(
+    request: Request, 
+    user_in: UserCreate = Body(...)
+) -> User:
+    
+    return await handle_create_user(user_in)
+
+
+
 
 @router.post(
     '/login', 

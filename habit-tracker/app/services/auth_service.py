@@ -1,4 +1,8 @@
-from typing import Any, Dict
+from pymongo.errors import DuplicateKeyError
+from typing import (
+    Any, 
+    Dict
+)
 from fastapi import (
     HTTPException,
     Request,
@@ -8,7 +12,11 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.models.users import User
-from app.core.security import verify
+from app.schemas.users import UserCreate
+from app.core.security import (
+    verify,
+    hash
+)
 from app.config.logging_handler import logger
 from app.core.jwt import (
     create_access_token,
@@ -17,16 +25,64 @@ from app.core.jwt import (
 )
 
 
+
+
+async def handle_create_user(user: UserCreate) -> User:
+    try:
+        
+        if await User.find_one(User.email == user.email):
+            
+            raise HTTPException(
+                status_code = status.HTTP_409_CONFLICT,
+                detail = "Email exists"
+            )
+        
+        if await User.find_one(User.username == user.username):
+            
+            raise HTTPException(
+                status_code = status.HTTP_409_CONFLICT, 
+                detail = "Username exists"
+            )
+        
+        new_user = User(
+            **user.model_dump(exclude = {"password"}),
+            password = await hash(user.password)
+        )
+
+        return await new_user.insert()
+    
+    except HTTPException:
+        raise
+    
+    except DuplicateKeyError as error:
+        logger.error(f"Duplicate Key Error while registering user: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_409_CONFLICT,
+            detail = "Data conflict: The provided credentials are already in use."
+        )
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in create_user: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+
+
+
+
+
 async def handle_login(
     response: Response, 
     user_credential: OAuth2PasswordRequestForm
 ) -> Dict[str, str]:
 
     try:
-        # Get user from database
+        
         user = await User.find_one(User.username == user_credential.username) # type: ignore
 
-        # If user not found
         if not user:
             logger.warning(f"Login failed: Username '{user_credential.username}' not found.")
             raise HTTPException(
@@ -34,7 +90,6 @@ async def handle_login(
                 detail="Invalid credentials"
             )
 
-        # If user found but is inactive or deleted
         if user.status != "active":
             logger.warning(f"Login forbidden: Account '{user_credential.username}' is inactive.")
             raise HTTPException(
@@ -42,34 +97,29 @@ async def handle_login(
                 detail="User account is inactive"
             )
         
-        # Verify password 
         if not await verify(user_credential.password, user.password):
             logger.warning(f"Login failed: Incorrect password for user '{user_credential.username}'.")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials"
             )
-
-        # Create JWT access-token 
+        
         access_token = await create_access_token({
             "id": str(user.id),
             "role": user.role
         })
 
-        # Create JWT refresh-token
         refresh_token = await create_refresh_token({
             "id": str(user.id),
             "role": user.role
         })
 
-        # Add refresh token to database
-        await user.update({ # type: ignore
+        await user.update({ 
             "$set": {
                 "refresh_token": refresh_token
             }
         })
 
-        # Return refresh-token as cookie
         response.set_cookie(
             key="jwt",
             value=refresh_token,
@@ -84,15 +134,18 @@ async def handle_login(
         }
 
     except HTTPException:
-        # Re-raise explicit HTTP exceptions to maintain intended API behavior
         raise
+
     except Exception as error:
-        # Log unexpected system errors 
+
         logger.error(f"Unexpected Login Exception: {error}", exc_info = True)
+        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+
+
 
 
 async def handle_refresh_token(request: Request) -> Dict[str, str]:
