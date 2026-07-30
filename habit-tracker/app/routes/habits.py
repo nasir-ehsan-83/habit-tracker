@@ -19,17 +19,15 @@ from app.utils.enum import HabitCategory
 from app.utils.limiter import limiter
 from app.schemas.habits import (
     HabitCreate, 
-    HabitPrivateOut, 
-    HabitAdminOut, 
+    HabitPrivateOut,
     HabitUpdate
 )
 from app.services.habits_service import(
     create_new_habit,
     get_all_habits,
-    get_all_habits_admin, 
-    get_habit_by_name,
-    update_habit_by_name,
-    delete_habit_by_name
+    get_habit,
+    update_habit,
+    delete_habit
 )
 
 
@@ -51,6 +49,7 @@ router = APIRouter(
 async def create_habit(
     request: Request,
     current_user: TokenData = Depends(get_current_user),
+    user_role: str = Depends(require_role(["USER"])),
     habit: HabitCreate = Body(...), 
 ) -> Habit:
     
@@ -65,6 +64,7 @@ async def create_habit(
 )
 async def get_habits(
     current_user: TokenData = Depends(get_current_user), 
+    user_role: str = Depends(require_role(["USER"])),
     category: HabitCategory = Query(default = ""),
     completed: bool = Query(default = False),
     page: int = Query(default = 1, gt = 0), 
@@ -77,38 +77,41 @@ async def get_habits(
 
 
 @router.get(
-    '/{name}', 
+    '/{id}', 
     response_model = HabitPrivateOut
 )
-async def get_habit(
+async def get_habit_id(
     current_user: TokenData = Depends(get_current_user), 
-    name: str = Path()
+    user_role: str = Depends(require_role(["USER"])),
+    id: BeanieObjectId = Path()
 ) -> Habit:
 
-    return await get_habit_by_name(name, current_user)
+    return await get_habit(id, current_user)
 
 
 
 
 @router.patch(
-    '/{name}', 
+    '/{id}', 
     response_model = HabitPrivateOut
 )
-async def update_habit(
+async def update_habit_id(
     current_user: TokenData = Depends(get_current_user),
-    name: str = Path(), 
-    update_habit: HabitUpdate = Body(...)
+    user_role: str = Depends(require_role(["USER"])),
+    id: BeanieObjectId = Path(), 
+    update_data: HabitUpdate = Body(...)
 ) -> Habit:
     
-    return await update_habit_by_name(name, update_habit, current_user)
+    return await update_habit(id, update_data, current_user)
 
 
 
 
-@router.delete('/{name}')
-async def delete_habit(
+@router.delete('/{id}')
+async def delete_habit_id(
     current_user: TokenData = Depends(get_current_user),
-    name: str = Path()
+    user_role: str = Depends(require_role(["USER"])),
+    id: BeanieObjectId = Path()
 ) :
 
-    return await delete_habit_by_name(name, current_user)
+    return await delete_habit(id, current_user)

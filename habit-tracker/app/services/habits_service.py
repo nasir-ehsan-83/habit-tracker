@@ -108,14 +108,14 @@ async def get_all_habits(
 
 
 
-async def get_habit_by_name(
-    name: str, 
+async def get_habit(
+    id: BeanieObjectId, 
     current_user: TokenData
 ) -> Habit:
     try:
-        # Retrieve habit by name and specific owner
+        
         existing_habit = await Habit.find_one(
-            Habit.name == name,
+            Habit.id == BeanieObjectId(id),
             Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"   
         )
@@ -141,15 +141,15 @@ async def get_habit_by_name(
 
 
 
-async def update_habit_by_name(
-    name: str, 
+async def update_habit(
+    id: BeanieObjectId, 
     update_habit: HabitUpdate, 
     current_user: TokenData
 ) -> Habit:
     try:
-        # Fetch specific habit from database
+        
         existing_habit = await Habit.find_one(
-            Habit.name == name,
+            Habit._class_id == BeanieObjectId(id),
             Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
         )
@@ -160,7 +160,6 @@ async def update_habit_by_name(
                 detail = "Habit not found"
             )
         
-        # Delete undefined or null values
         update_data = update_habit.model_dump(
             exclude_unset = True, 
             exclude_none = True
@@ -170,12 +169,10 @@ async def update_habit_by_name(
             "updated_at": datetime.now(timezone.utc)
         })
         
-        # Update habit and store changes in the database
         await existing_habit.update({
             "$set": update_data
         })
         
-        # Sync local object fields with database changes
         await existing_habit.sync()
         
         return existing_habit
@@ -193,14 +190,14 @@ async def update_habit_by_name(
 
 
 
-async def delete_habit_by_name(
-    name: str, 
+async def delete_habit(
+    id: BeanieObjectId, 
     current_user: TokenData
 ) -> Response:
     try:
-        # Fetch specific habit from database
+    
         existing_habit = await Habit.find_one(
-            Habit.name == name,
+            Habit.id == BeanieObjectId(id),
             Habit.owner_id == BeanieObjectId(current_user.id),
             Habit.status != "deleted"
         )
@@ -211,7 +208,6 @@ async def delete_habit_by_name(
                 detail = "Habit not found"
             )
         
-        # Perform soft-deletion
         await existing_habit.update({
             "$set": {
                 "status": "deleted"
