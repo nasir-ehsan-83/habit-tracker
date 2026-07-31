@@ -1,4 +1,7 @@
-from typing import List
+from typing import (
+    Annotated, 
+    List
+)
 from beanie import BeanieObjectId
 from fastapi import (
     APIRouter, 
@@ -12,7 +15,6 @@ from app.models.habits import Habit
 from app.models.users import User
 from app.schemas.habits import HabitAdminOut
 from app.schemas.users import UserAdminOut
-from app.schemas.token import TokenData
 from app.services.admin_service import (
     block_user,
     get_all_habits, 
@@ -26,7 +28,11 @@ from app.utils.enum import HabitCategory
 
 router: APIRouter = APIRouter(
     prefix = '/api/admin',
-    tags = ["Admin"]
+    tags = ["Admin"],
+    dependencies = [
+        Depends(get_current_user),
+        Depends(require_role(["ADMIN"]))
+    ]
 )
 
 
@@ -37,14 +43,12 @@ router: APIRouter = APIRouter(
     response_model = List[UserAdminOut]
 )
 async def get_users(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["ADMIN"])),
-    is_actived: bool = Query(default = False),
-    page: int = Query(default = 1,  gt = 0, lt = 100),
-    limit: int = Query(default = 0, gt = 0, lt = 100)
+    is_active:  Annotated[bool, Query(default = False)], 
+    page:       Annotated[int, Query(default = 1,  gt = 0, lt = 100)],
+    limit:      Annotated[int, Query(default = 10, gt = 0, lt = 100)] 
 ) -> List[User]:
-    
-    return await get_all_users(is_actived, page, limit)
+    return await get_all_users(is_active, page, limit)
+
 
 
 
@@ -54,9 +58,7 @@ async def get_users(
     response_model = UserAdminOut
 )
 async def get_user(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["ADMIN"])),
-    user_id: BeanieObjectId = Path()
+    user_id:    Annotated[BeanieObjectId, Path()]
 ) -> User | None:
     
     return await get_one_user(user_id)
@@ -69,11 +71,9 @@ async def get_user(
     response_model = UserAdminOut
 )
 async def user_ban(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["ADMIN"])),
-    user_id: BeanieObjectId = Path()
+    user_id:    Annotated[BeanieObjectId, Path()]
 ) -> User | None:
-
+    
     return await block_user(user_id)
 
 
@@ -84,12 +84,10 @@ async def user_ban(
     response_model = List[HabitAdminOut]
 )
 async def get_habits(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["admin"])),
-    owner_id:BeanieObjectId | None = Query(gt = 0), 
-    category: HabitCategory = Query(default = ""),
-    page: int = Query(default = 1, gt = 0), 
-    limit: int = Query(default = 10, gt = 0), 
+    owner_id:   Annotated[BeanieObjectId | None, Query(default = None)], 
+    category:   Annotated[HabitCategory, Query(default = None)],
+    page:       Annotated[int, Query(default = 1, gt = 0)], 
+    limit:      Annotated[int, Query(default = 10, gt = 0)], 
 ) -> List[Habit]:
     
-    return await get_all_habits(owner_id,category, page, limit)
+    return await get_all_habits(owner_id, category, page, limit)
