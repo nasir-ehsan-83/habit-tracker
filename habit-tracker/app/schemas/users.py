@@ -1,4 +1,3 @@
-from typing import Optional
 from beanie import BeanieObjectId
 from pydantic import (
     BaseModel, 
@@ -14,55 +13,79 @@ from app.utils.enum import (
     UserRole
 )
 
+
+
 class UserBase(BaseModel):
-    name: str = Field(
+    
+    name:       str = Field(
         min_length = 3, 
         max_length = 50
     )
-    username: str = Field(
+    
+    username:   str = Field(
         min_length = 3, 
         max_length = 30
     )
-    email: EmailStr
+    
+    email:      EmailStr
+
+
 
 class  UserCreate(UserBase):
     password: str = Field(min_length = 8)
 
-class UserPrivateOut(UserBase):
-    id: Optional[BeanieObjectId] = Field(None, alias = "_id")
-    role: UserRole
-    status: UserStatus
 
+
+class UserPrivateOut(UserBase):
+    
+    id:         BeanieObjectId | None= Field(
+        default = None, 
+        alias = "_id"
+    )
+    
+    role:       UserRole
+    status:     UserStatus
+
+    
     model_config = ConfigDict(
         from_attributes = True, 
         populate_by_name = True
     )
 
+    
     @field_validator("id", mode = "before")
     @classmethod
     def convert_objectid(cls, v: BeanieObjectId):
         return str(v)
-    
+
+
+
 class UserAdminOut(UserBase):
-    id: BeanieObjectId = Field(alias = "_id")
-    status: UserStatus
-    role: UserRole
+    
+    id:         BeanieObjectId = Field(alias = "_id")
+    status:     UserStatus
+    role:       UserRole
     created_at: datetime
     updated_at: datetime
+    
     
     model_config = ConfigDict(
         from_attributes = True, 
         populate_by_name = True
     )
 
+    
     @field_validator("id", mode = "before")
     @classmethod
     def convert_objectid(cls, v: BeanieObjectId):
         return str(v) 
     
+
+
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    username: Optional[str] = None
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    status: Optional[str] = None
+    
+    name:       str | None      = None
+    username:   str | None      = None
+    email:      EmailStr | None = None
+    password:   str | None      = None
+    status:     str | None      = None
