@@ -1,4 +1,8 @@
-from typing import List
+from typing import (
+    Any, 
+    Dict, 
+    List
+)
 from fastapi import (
     HTTPException, 
     Response, 
@@ -38,6 +42,7 @@ async def create_new_habit(
                 status_code = status.HTTP_400_BAD_REQUEST,
                 detail = "Habit already exists"
             )
+        
         if found_habit:
             raise HTTPException(
                 status_code = status.HTTP_400_BAD_REQUEST,
@@ -56,12 +61,15 @@ async def create_new_habit(
     
     except DuplicateKeyError as error:
         logger.error(f"Duplicate Key Error while creating habit: {error}", exc_info = True)
+       
         raise HTTPException(
             status_code = status.HTTP_409_CONFLICT,
             detail = "Conflict: A habit with this name already exists for this user."
         )
+    
     except Exception as error:
         logger.error(f"Unexpected error in create_new_habit: {error}", exc_info = True)
+       
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
@@ -81,22 +89,16 @@ async def get_all_habits(
         
         skip, limit_val = paginate(page, limit)
 
-        habits: List[Habit]
+        query: Dict[str, Any] = {
+            "owner_d": id,
+            "status": "deleted",
+            "category": category
+        }
 
         if completed:
-            habits: List[Habit] = await Habit.find_all(
-                Habit.owner_id == BeanieObjectId(id), 
-                Habit.status == "completed",
-                Habit.category == category # type: ignore
-            ).skip(skip).limit(limit_val).sort("created_at").to_list() # type: ignore
-
-        else:
-            habits: List[Habit] = await Habit.find_all(
-                Habit.owner_id == BeanieObjectId(id), 
-                Habit.status != "deleted"
-            ).skip(skip).limit(limit_val).sort("created_at").to_list()
+            query["status"] = "completed"
         
-        return habits
+        return await Habit.find(query).skip(skip).limit(limit_val).sort("+created_at").to_list()
 
     except Exception as error:
         logger.error(f"Unexpected error in get_all_habits_owner: {error}", exc_info = True)
@@ -149,10 +151,10 @@ async def get_habits_by_category(
 ) -> List[Habit]:
     
     try:
-        return await Habit.find_all(
+        return await Habit.find(
             Habit.owner_id == BeanieObjectId(id), 
             Habit.status != "deleted",
-            Habit.category == category # type: ignore
+            Habit.category == category
         ).sort("created_at").to_list()
 
     except Exception as error:

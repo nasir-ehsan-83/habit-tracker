@@ -1,6 +1,6 @@
 from typing import (
-    List, 
-    Optional
+    Annotated,
+    List
 )
 from beanie import BeanieObjectId
 from fastapi import (
@@ -36,7 +36,10 @@ from app.services.habits_service import(
 
 router = APIRouter(
     prefix = '/api/habits',
-    tags = ["Habits"]
+    tags = ["Habits"],
+    dependencies = [
+        Depends(require_role(["USER"]))
+    ]
 )
 
 
@@ -48,10 +51,9 @@ router = APIRouter(
 )
 @limiter.limit('3/minute')
 async def create_habit(
-    request: Request,
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["USER"])),
-    habit: HabitCreate = Body(...), 
+    request:        Request,
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    habit:          Annotated[HabitCreate, Body(...)], 
 ) -> Habit:
     
     return await create_new_habit(habit, current_user)
@@ -64,12 +66,11 @@ async def create_habit(
     response_model = List[HabitPrivateOut]
 )
 async def get_habits(
-    current_user: TokenData = Depends(get_current_user), 
-    user_role: str = Depends(require_role(["USER"])),
-    category: HabitCategory = Query(default = ""),
-    completed: bool = Query(default = False),
-    page: int = Query(default = 1, gt = 0), 
-    limit: int = Query(default = 10, gt = 0)
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    category:       Annotated[HabitCategory, Query(default = "")],
+    completed:      Annotated[bool, Query(default = False)],
+    page:           Annotated[int, Query(default = 1, gt = 0)], 
+    limit:          Annotated[int, Query(default = 10, gt = 0)]
 ) -> List[Habit]:
     
     return await get_all_habits(current_user.id, category, completed, page, limit)
@@ -82,9 +83,8 @@ async def get_habits(
     response_model = HabitPrivateOut
 )
 async def get_habit_id(
-    current_user: TokenData = Depends(get_current_user), 
-    user_role: str = Depends(require_role(["USER"])),
-    id: BeanieObjectId = Path()
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    id:             Annotated[BeanieObjectId, Path()]
 ) -> Habit:
 
     return await get_habit(id, current_user)
@@ -97,9 +97,8 @@ async def get_habit_id(
     response_model = HabitPrivateOut
 )
 async def get_habit_category(
-    current_user: TokenData = Depends(get_current_user), 
-    user_role: str = Depends(require_role(["USER"])), 
-    category: HabitCategory = Path()
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    category:       Annotated[HabitCategory, Path()]
 ) -> List[Habit]:
     
     return await get_habits_by_category(current_user.id, category)
@@ -112,10 +111,9 @@ async def get_habit_category(
     response_model = HabitPrivateOut
 )
 async def update_habit_id(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["USER"])),
-    id: BeanieObjectId = Path(), 
-    update_data: HabitUpdate = Body(...)
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    id:             Annotated[BeanieObjectId, Path()], 
+    update_data:    Annotated[HabitUpdate, Body(...)]
 ) -> Habit:
     
     return await update_habit(id, update_data, current_user)
@@ -125,9 +123,8 @@ async def update_habit_id(
 
 @router.delete('/{id}')
 async def delete_habit_id(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["USER"])),
-    id: BeanieObjectId = Path()
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    id:             Annotated[BeanieObjectId, Path()]
 ) :
 
     return await delete_habit(id, current_user)
