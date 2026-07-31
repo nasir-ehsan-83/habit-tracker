@@ -10,13 +10,13 @@ from app.config.logging_handler import logger
 
 
 
-ACCESS_SECRET_KEY: str = settings.ACCESS_SECRET_KEY
+ACCESS_SECRET_KEY:  str = settings.ACCESS_SECRET_KEY
 REFRESH_SECRET_KEY: str = settings.REFRESH_SECRET_KEY
 
-ALGORITHM: str = settings.ALGORITHM
+ALGORITHM:  str = settings.ALGORITHM
 
-ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-REFRESH_TOKEN_EXPIRE_DAYS: int = settings.REFRESH_TOKEN_EXPIRE_DAYS
+ACCESS_TOKEN_EXPIRE_MINUTES:    int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+REFRESH_TOKEN_EXPIRE_DAYS:      int = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
 
 
@@ -27,9 +27,17 @@ async def create_access_token(
 
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes = ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "type": "access"})
     
-    return await run_in_threadpool(jwt.encode, to_encode, ACCESS_SECRET_KEY, ALGORITHM)
+    to_encode.update({
+        "exp": expire, 
+        "type": "access"
+    })
+    
+    return await run_in_threadpool(
+        jwt.encode, 
+        to_encode, 
+        ACCESS_SECRET_KEY, ALGORITHM
+    )
 
 
 
@@ -50,14 +58,14 @@ async def verify_access_token(
         if payload.get("type") != "access":
             raise credentials_exception
         
-        id: BeanieObjectId | None = payload.get("id")
-        role: str | None = payload.get("role")
+        id:     BeanieObjectId | None = payload.get("id")
+        role:   str | None = payload.get("role")
         
         if not id or not role:
             raise credentials_exception
         
         return TokenData(
-            id = id, 
+            id  = id, 
             role = role
         )
     
@@ -86,8 +94,8 @@ async def create_refresh_token(
     data: Dict[str, str | int | datetime]
 ) -> str:
 
-    to_encode: Dict[str, str | int | datetime] = data.copy()
-    expire: datetime = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode:  Dict[str, str | int | datetime] = data.copy()
+    expire:     datetime = datetime.now(timezone.utc) + timedelta(days = REFRESH_TOKEN_EXPIRE_DAYS)
     
     to_encode.update({
         "exp": expire, 
@@ -107,6 +115,7 @@ async def verify_refresh_token(
     token: str,
     credentials_exception: HTTPException = HTTPException(status_code = status.HTTP_401_UNAUTHORIZED, detail = "Invalid refresh token")
 ) -> Dict[str, Any]:
+    
     try:
         payload: Dict[str, Any] = await run_in_threadpool(
             jwt.decode, 

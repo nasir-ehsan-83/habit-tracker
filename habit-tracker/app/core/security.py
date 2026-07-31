@@ -1,12 +1,16 @@
 from passlib.context import CryptContext
 from fastapi.concurrency import run_in_threadpool
 
+
+
 password_context = CryptContext(
     schemes = ["bcrypt"], 
     deprecated = "auto"
 )
 
-# hash provided password
+
+
+
 async def hash(password: str) -> str:
     password_bytes = password.encode("utf-8")[:72]
 
@@ -15,13 +19,13 @@ async def hash(password: str) -> str:
         errors="ignore"
     )
 
-    # Offload the heavy hashing to a threadpool
     return await run_in_threadpool(
         password_context.hash, 
         password_truncated
     )
 
-# compare hashed password and uphashed password
+
+
 async def verify(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
         return False

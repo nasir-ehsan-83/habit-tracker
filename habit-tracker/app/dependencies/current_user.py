@@ -6,19 +6,21 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.jwt import verify_access_token
-#from app.models.users import User
+
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl = "login")
 
+
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    # create credential exception
+
     credential_exception = HTTPException(
         status_code = status.HTTP_401_UNAUTHORIZED,
         detail = "Could not validate credentials",
         headers = {"WWW-Authenticate": "Bearer"}
     )
 
-    # verify JWT access-token 
     return await verify_access_token(token,credential_exception)
 """ 
     # get user from database

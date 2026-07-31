@@ -1,4 +1,3 @@
-from typing import Optional
 from datetime import (
     datetime, 
     timezone
@@ -18,24 +17,36 @@ from app.utils.enum import (
     UserStatus
 )
 
+
+
 class User(Document):
-    name: str
-    username: str
-    email: EmailStr  
-    password: str
 
-    role: str = UserRole.user
-    status: UserStatus = UserStatus.active
-    
-    created_at: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    name:           str
+    username:       str
+    email:          EmailStr  
+    password:       str
 
-    refresh_token: Optional[str] = None
+    role:           str = UserRole.user
+    status:         UserStatus = UserStatus.active
     
+    created_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    updated_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+
+    refresh_token:  str | None = None
+    
+
     class Settings:
+    
         name = "users"
+
         # Correct way to define unique indexes in Beanie Settings
         indexes = [
-            IndexModel([("email", ASCENDING)], unique = True),
-            IndexModel([("username", ASCENDING)], unique = True),
+            IndexModel(
+                [("email", ASCENDING)], 
+                unique = True
+            ),
+            IndexModel(
+                [("username", ASCENDING)], 
+                unique = True
+            ),
         ]
