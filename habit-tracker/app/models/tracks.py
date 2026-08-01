@@ -16,7 +16,7 @@ from pymongo import (
     IndexModel
 )
 from pydantic import Field
-
+from app.utils.enum import HabitStatus
 
 
 class Track(Document):
@@ -27,7 +27,7 @@ class Track(Document):
     value:          int = Field(default = 1, ge = 0)
     date:           date = Field(default_factory = lambda: datetime.now(timezone.utc).date())
     timestamp:      int = Field(default_factory = lambda: int(datetime.now(timezone.utc).timestamp()))
-    status:         str = Field(default = "completed")
+    status:         HabitStatus = Field(default =  HabitStatus.completed)
 
     created_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     updated_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
