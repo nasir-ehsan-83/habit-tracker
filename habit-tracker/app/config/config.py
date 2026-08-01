@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     DATABASE_NAME:                  str
     DATABASE_NAME_TEST:             str
     
+    REDIS_HOST:                     str
+    REDIS_PORT:                     int
+
     ACCESS_SECRET_KEY:              str
     REFRESH_SECRET_KEY:             str
 
