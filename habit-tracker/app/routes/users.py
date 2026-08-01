@@ -1,3 +1,4 @@
+from typing import Annotated
 from beanie import BeanieObjectId
 from fastapi import (
     APIRouter,
@@ -18,8 +19,9 @@ from app.schemas.users import (
     UserUpdate
 )
 from app.services.users_service import (
-    get_user_by_id, 
-    update_user_by_id
+    get_user,
+    update_avatar, 
+    update_user
 )
 
 
@@ -27,7 +29,10 @@ from app.services.users_service import (
 
 router = APIRouter(
     prefix = '/api/users',
-    tags = ['User']
+    tags = ['User'],
+    dependencies = [
+        Depends(require_role(["ADMIN", "USER"]))
+    ]
 )
 
 
@@ -37,12 +42,11 @@ router = APIRouter(
     '/me', 
     response_model = UserPrivateOut
 )
-async def get_user(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["ADMIN", "USER"]))
+async def get_user_id(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
 ) -> User:
 
-    return await get_user_by_id(current_user.id)
+    return await get_user(current_user.id)
 
 
 
@@ -51,13 +55,21 @@ async def get_user(
     '/me', 
     response_model = UserPrivateOut
 )
-async def update_user(
-    current_user: TokenData = Depends(get_current_user),
-    user_role: str = Depends(require_role(["ADMIN", "USER"])),
-    user_data: UserUpdate = Body(...)
+async def update_user_id(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    user_data:      Annotated[UserUpdate, Body(...)]
 ) -> User :
 
-    return await update_user_by_id(current_user.id, user_data)
+    return await update_user(current_user.id, user_data)
 
 
 
+@router.patch(
+    '/me/avatar'
+)
+async def update_user_avatar(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    new_url:        str
+) -> User:
+    
+    return await update_avatar(current_user.id, new_url)

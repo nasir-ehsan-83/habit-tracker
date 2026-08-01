@@ -15,7 +15,7 @@ from app.config.logging_handler import logger
 
 
 
-async def get_user_by_id(
+async def get_user(
     id: BeanieObjectId
 ) -> User:
     try:
@@ -47,9 +47,9 @@ async def get_user_by_id(
 
 
 
-async def update_user_by_id(
-    id: BeanieObjectId, 
-    data: UserUpdate
+async def update_user(
+    id:     BeanieObjectId, 
+    data:   UserUpdate
 ) -> User:
     
     try:
@@ -74,8 +74,8 @@ async def update_user_by_id(
 
         update_data["updated_at"] = datetime.now(timezone.utc)
 
-        await user.update({ 
-            "$set": update_data
+        await user.set({ 
+            **update_data
         })
         
         await user.sync()
@@ -94,3 +94,39 @@ async def update_user_by_id(
 
 
 
+
+async def update_avatar(
+    id:     BeanieObjectId,
+    url:    str
+) -> User:
+    
+    try:
+
+        user = await User.find_one(
+            User.id == BeanieObjectId(id),
+            User.status == "active"
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "User not found"
+            )
+        
+        await user.set({
+            "vavatar": url
+        })
+        await user.sync()
+
+        return user
+
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in update_user_by_email: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
