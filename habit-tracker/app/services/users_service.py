@@ -1,17 +1,26 @@
+from typing import (
+    List, 
+    Tuple
+)
 from fastapi import (
     HTTPException, 
     Response, 
     status
 )
-from datetime import datetime, timezone
+from datetime import (
+    datetime, 
+    timezone
+)
 from beanie import BeanieObjectId
 
-from app.core.security import hash
-from app.models.users import User
-from app.schemas.users import UserUpdate
-from app.schemas.token import TokenData
+from app.core import hash_password
 from app.config.logging_handler import logger 
-
+from app.models import (
+    User,
+    Habit
+)
+from app.schemas import UserUpdate
+from app.services.habits_service import get_all_habits
 
 
 
@@ -70,7 +79,7 @@ async def update_user(
         )
         
         if "password" in update_data:
-            update_data["password"] = await hash(update_data["password"])
+            update_data["password"] = await hash_password(update_data["password"])
 
         update_data["updated_at"] = datetime.now(timezone.utc)
 
@@ -119,6 +128,41 @@ async def update_avatar(
         await user.sync()
 
         return user
+
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in update_user_by_email: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
+
+
+    
+async def get_stats(
+    id:     BeanieObjectId
+) -> Tuple[User, List[Habit]]:
+    
+    try:
+        user = await User.find_one(
+            User.id == BeanieObjectId(id),
+            User.status == "active"
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "User not found"
+            )
+        
+        habits: List[Habit] = await get_all_habits(id)
+
+        return user, habits
+    
 
     except HTTPException:
         raise

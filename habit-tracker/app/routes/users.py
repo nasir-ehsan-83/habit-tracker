@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, List, Sequence, Tuple
 from beanie import BeanieObjectId
 from fastapi import (
     APIRouter,
@@ -12,6 +12,7 @@ from fastapi import (
 from app.dependencies.current_user import get_current_user
 from app.dependencies.check_roles import require_role
 from app.models.users import User
+from app.models.habits import Habit
 from app.schemas.token import TokenData
 from app.utils.limiter import limiter
 from app.schemas.users import (
@@ -21,7 +22,8 @@ from app.schemas.users import (
 from app.services.users_service import (
     get_user,
     update_avatar, 
-    update_user
+    update_user,
+    get_stats
 )
 
 
@@ -73,3 +75,16 @@ async def update_user_avatar(
 ) -> User:
     
     return await update_avatar(current_user.id, new_url)
+
+
+
+
+@router.get(
+    '/me/stats',
+    response_model = Tuple[User, List[Habit]] 
+)
+async def get_user_stats(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+) -> Tuple[User, List[Habit]]:
+    
+    return await get_stats(current_user.id)
