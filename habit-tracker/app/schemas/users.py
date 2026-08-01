@@ -28,6 +28,7 @@ class UserBase(BaseModel):
     )
     
     email:      EmailStr
+    avatar:     str | None = None
 
 
 
@@ -88,4 +89,5 @@ class UserUpdate(BaseModel):
     username:   str | None      = None
     email:      EmailStr | None = None
     password:   str | None      = None
+    avatar:     str | None      = None
     status:     str | None      = None
