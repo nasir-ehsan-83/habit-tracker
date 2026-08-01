@@ -14,6 +14,12 @@ from .token import (
     Token,
     TokenData
 )
+from .tracks import (
+    TrackCreate,
+    TrackOut,
+    TrackUpdate
+)
+
 
 __all__ = [
     "UserCreate",
@@ -25,5 +31,8 @@ __all__ = [
     "HabitAdminOut",
     "HabitUpdate",
     "Token",
-    "TokenData"
+    "TokenData",
+    "TrackCreate",
+    "TrackOut",
+    "TrackUpdate"
 ]
