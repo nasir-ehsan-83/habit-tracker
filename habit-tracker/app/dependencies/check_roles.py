@@ -10,7 +10,7 @@ from app.schemas.token import TokenData
 
 
 
-def require_role(allowed_roles: List[str]) -> FunctionType:
+def required_role(allowed_roles: List[str]) -> FunctionType:
     
     async def role_checker(current_user: TokenData = Depends(get_current_user)) -> str:
         

@@ -1,12 +1,29 @@
-from datetime import datetime, timezone, timedelta
-from typing import Any, Dict
+from typing import (
+    Any, 
+    Dict
+)
+from fastapi import (
+    HTTPException, 
+    status
+)
 from beanie import BeanieObjectId
-from jose import jwt, JWTError, ExpiredSignatureError
-from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from app.schemas.token import TokenData
-from app.config.config import settings
-from app.config.logging_handler import logger
+from datetime import (
+    datetime, 
+    timezone, 
+    timedelta
+)
+from jose import (
+    jwt, 
+    JWTError, 
+    ExpiredSignatureError
+)
+
+from app.schemas import TokenData
+from app.config import (
+    settings,
+    logger
+)
 
 
 

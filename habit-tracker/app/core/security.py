@@ -11,7 +11,7 @@ password_context = CryptContext(
 
 
 
-async def hash(password: str) -> str:
+async def hash_password(password: str) -> str:
     password_bytes = password.encode("utf-8")[:72]
 
     password_truncated = password_bytes.decode(
@@ -26,7 +26,7 @@ async def hash(password: str) -> str:
 
 
 
-async def verify(plain_password: str, hashed_password: str) -> bool:
+async def verify_password(plain_password: str, hashed_password: str) -> bool:
     if not hashed_password:
         return False
     

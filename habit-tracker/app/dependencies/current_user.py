@@ -5,7 +5,7 @@ from fastapi import (
 )
 from fastapi.security import OAuth2PasswordBearer
 
-from app.core.jwt import verify_access_token
+from app.core import verify_access_token
 
 
 
