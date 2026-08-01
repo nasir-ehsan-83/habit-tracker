@@ -12,22 +12,21 @@ from beanie import (
 )
 from pymongo import (
     ASCENDING,
-    DESCENDING,
     IndexModel
 )
 from pydantic import Field
 
 
 
-class Track(Document):
+class Streak(Document):
 
     owner_id:       BeanieObjectId
     habit_id:       BeanieObjectId
-    note:           str | None = Field(default = None, max_length = 500)
-    value:          int = Field(default = 1, ge = 0)
-    date:           date = Field(default_factory = lambda: datetime.now(timezone.utc).date())
-    timestamp:      int = Field(default_factory = lambda: int(datetime.now(timezone.utc).timestamp()))
-    status:         str = Field(default = "completed")
+    current_streak: int = Field(default = 0, ge = 0)
+    longest_streak: int = Field(default = 0, ge = 0)
+    start_date:     date | None = Field(default = None)
+    last_tracked:   date | None = Field(default = None)
+    status:         str = Field(default = "active")
 
     created_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
     updated_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
@@ -40,14 +39,13 @@ class Track(Document):
 
     class Settings:
 
-        name = "tracks"
+        name = "streaks"
 
         indexes = [
             IndexModel(
                 [
                     ("owner_id", ASCENDING),
-                    ("habit_id", ASCENDING),
-                    ("date", DESCENDING)
+                    ("habit_id", ASCENDING)
                 ],
                 unique = True
             ),
