@@ -1,10 +1,15 @@
-from typing import Annotated
+from datetime import date
+from typing import (
+    Annotated, 
+    List
+)
 from beanie import BeanieObjectId
 from fastapi import (
     APIRouter, 
     Depends,
     Body,
-    Path
+    Path,
+    Query
 )
 
 from app.dependencies import (
@@ -19,8 +24,9 @@ from app.schemas import (
     TrackUpdate
 )
 from app.services.tracks_service import(
-    create_track,
-    update_track
+    create_track_service,
+    update_track_service,
+    get_tracks_service
 )
 
 
@@ -43,7 +49,7 @@ async def create_track_route(
     track:          Annotated[TrackCreate, Body(...)]
 ) -> Track:
     
-    return await create_track(current_user.id, track)
+    return await create_track_service(current_user.id, track)
 
 
 
@@ -58,4 +64,20 @@ async def update_track_route(
     updated_data:   Annotated[TrackUpdate, Body(...)]
 ) -> Track:
     
-    return await update_track(current_user.id, habit_id, updated_data)
+    return await update_track_service(current_user.id, habit_id, updated_data)
+
+
+
+
+@router.get(
+    '/daily',
+    response_model = List[TrackOut]
+)
+async def get_tracks_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    habit_id:       Annotated[BeanieObjectId, Query(default = None)],
+    from_date:      Annotated[date, Query()],
+    to_date:        Annotated[date, Query()]
+) -> List[Track]:
+    
+    return await get_tracks_service(current_user.id, habit_id, from_date, to_date)

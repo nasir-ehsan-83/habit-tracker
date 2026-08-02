@@ -1,6 +1,8 @@
+from datetime import date
 from typing import (
     Any, 
-    Dict
+    Dict,
+    List
 )
 from beanie import BeanieObjectId
 from fastapi import (
@@ -18,7 +20,7 @@ from app.models import Track
 
 
 
-async def create_track(
+async def create_track_service(
     owner_id:   BeanieObjectId,
     track_in:      TrackCreate
 ) -> Track:
@@ -46,13 +48,13 @@ async def create_track(
             owner_id = owner_id
         )
 
-        return await new_track.insert()
+        return await new_track.insert() # type: ignore
 
     except HTTPException:
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in create_track: {error}", exc_info = True)
+        logger.error(f"Unexpected error in create_track_service: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -62,7 +64,7 @@ async def create_track(
 
 
 
-async def update_track(
+async def update_track_service(
     owner_id:       BeanieObjectId,
     habit_id:       BeanieObjectId,
     updated_data:   TrackUpdate
@@ -95,7 +97,47 @@ async def update_track(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in udpate_track: {error}", exc_info = True)
+        logger.error(f"Unexpected error in udpate_track_service: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
+
+
+
+async def get_tracks_service(
+    owner_id:   BeanieObjectId,
+    habit_id:   BeanieObjectId | None,
+    from_date:  date,
+    to_date:    date
+) -> List[Track]:
+    
+    try:
+
+        query: Dict[str, Any] = {
+            "owner_id": owner_id,
+            "date": {
+                "$gt": from_date, 
+                "$ls": to_date
+            }
+        }
+
+        if habit_id is not None:
+            query["habit_id"] = habit_id
+
+        tracks: List[Track] = Track.find_all(
+            **query,
+        ) # type: ignore
+
+        return tracks
+    
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in get_tracks_service: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
