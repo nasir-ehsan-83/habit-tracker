@@ -1,70 +1,61 @@
-from pymongo.errors import DuplicateKeyError
 from typing import (
     Any, 
     Dict
 )
+from beanie import BeanieObjectId
 from fastapi import (
-    HTTPException,
-    Request,
-    Response,
+    HTTPException, 
+    Request, 
+    Response, 
     status
 )
 from fastapi.security import OAuth2PasswordRequestForm
+from pymongo.errors import DuplicateKeyError
 
-from app.models.users import User
-from app.schemas.users import UserCreate
-from app.core.security import (
-    verify,
-    hash
-)
-from app.config.logging_handler import logger
-from app.core.jwt import (
-    create_access_token,
-    create_refresh_token,
+from app.config import logger
+from app.core import (
+    hash_password, 
+    verify_password,
+    create_access_token, 
+    create_refresh_token, 
     verify_refresh_token
 )
+from app.db import redis_client
+from app.models import User
+from app.schemas import (
+    UserCreate
+)
 
 
 
 
-async def handle_create_user(user: UserCreate) -> User:
+REDIS_REFRESH_PREFIX = "auth:refresh-token:"
+REDIS_BLACKLIST_PREFIX = "auth:blacklist:"
+
+
+
+
+async def create_user_service(
+    user: UserCreate
+) -> User:
     try:
-        
-        if await User.find_one(User.email == user.email):
-            
-            raise HTTPException(
-                status_code = status.HTTP_409_CONFLICT,
-                detail = "Email exists"
-            )
-        
-        if await User.find_one(User.username == user.username):
-            
-            raise HTTPException(
-                status_code = status.HTTP_409_CONFLICT, 
-                detail = "Username exists"
-            )
-        
         new_user = User(
-            **user.model_dump(exclude = {"password"}),
-            password = await hash(user.password)
+            **user.model_dump(exclude={"password"}),
+            password = await hash_password(user.password)
         )
 
         return await new_user.insert()
-    
-    except HTTPException:
-        raise
-    
-    except DuplicateKeyError as error:
-        logger.error(f"Duplicate Key Error while registering user: {error}", exc_info = True)
-    
+
+    except DuplicateKeyError:
+        
         raise HTTPException(
             status_code = status.HTTP_409_CONFLICT,
-            detail = "Data conflict: The provided credentials are already in use."
+            detail = "Data conflict: Username or Email already exists."
         )
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in create_user: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in create_user_service: {error}", exc_info = True)
+       
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
@@ -73,75 +64,61 @@ async def handle_create_user(user: UserCreate) -> User:
 
 
 
-
-async def handle_login(
-    response: Response, 
+async def login_service(
+    response: Response,
     user_credential: OAuth2PasswordRequestForm
-) -> Dict[str, str]:
-
+) -> Dict[str, Any]:
     try:
-        
+    
         user = await User.find_one(User.username == user_credential.username)
 
-        if not user:
-            logger.warning(f"Login failed: Username '{user_credential.username}' not found.")
-            
+        if not user or not await verify_password(user_credential.password, user.password):
+           
             raise HTTPException(
                 status_code = status.HTTP_401_UNAUTHORIZED,
                 detail = "Invalid credentials"
             )
 
         if user.status != "active":
-            logger.warning(f"Login forbidden: Account '{user_credential.username}' is inactive.")
-            
             raise HTTPException(
                 status_code = status.HTTP_403_FORBIDDEN,
                 detail = "User account is inactive"
             )
-        
-        if not await verify(user_credential.password, user.password):
-            logger.warning(f"Login failed: Incorrect password for user '{user_credential.username}'.")
-            
-            raise HTTPException(
-                status_code = status.HTTP_401_UNAUTHORIZED,
-                detail = "Invalid credentials"
-            )
-        
-        access_token = await create_access_token({
+
+        user_payload: Dict[str, Any] = {
             "id": str(user.id),
             "role": user.role
-        })
+        }
 
-        refresh_token = await create_refresh_token({
-            "id": str(user.id),
-            "role": user.role
-        })
+        access_token = await create_access_token(user_payload)
+        refresh_token = await create_refresh_token(user_payload)
 
-        await user.update({ 
-            "$set": {
-                "refresh_token": refresh_token
-            }
-        })
+        await redis_client.set(
+            name = f"{REDIS_REFRESH_PREFIX}{user.id}",
+            value = refresh_token,
+            ex = 7 * 24 * 60 * 60
+        )
 
         response.set_cookie(
             key = "jwt",
             value = refresh_token,
             httponly = True,
-            max_age = 7 * 24 * 60 * 60
-            # secure = True, samesite = "lax"  <- Recommended for production security
+            max_age = 7 * 24 * 60 * 60,
+            #secure = True,
+            #samesite = "lax"
         )
 
         return {
             "access_token": access_token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "user": user_payload
         }
 
     except HTTPException:
         raise
 
     except Exception as error:
-
-        logger.error(f"Unexpected Login Exception: {error}", exc_info = True)
+        logger.error(f"Unexpected error in login_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -151,9 +128,11 @@ async def handle_login(
 
 
 
-async def handle_refresh_token(request: Request) -> Dict[str, str]:
+async def refresh_token_service(
+    request: Request
+) -> Dict[str, Any]:
     try:
-
+    
         refresh_token = request.cookies.get("jwt")
 
         if not refresh_token:
@@ -163,48 +142,35 @@ async def handle_refresh_token(request: Request) -> Dict[str, str]:
             )
 
         payload: Dict[str, Any] = await verify_refresh_token(refresh_token)
+        saved_token = await redis_client.get(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
 
-        user: User | None = await User.get(payload["id"])
+        if isinstance(saved_token, bytes):
+            saved_token = saved_token.decode("utf-8")
 
-        if not user:
-            logger.warning(f"Refresh token used for non-existent user ID: {payload.get('id')}")
+        if not saved_token or saved_token != refresh_token:
             
-            raise HTTPException(
-                status_code = status.HTTP_401_UNAUTHORIZED,
-                detail = "User not found"
-            )
-
-        if user.status != "active":
-            logger.warning(f"Refresh token blocked: User account '{user.username}' is inactive.")
             raise HTTPException(
                 status_code = status.HTTP_403_FORBIDDEN,
-                detail = "User account is inactive"
+                detail = "Token expired or blacklisted"
             )
 
-        if user.refresh_token != refresh_token:
-            logger.error(f"Potential Token Reuse Attack! Token mismatch for user: {user.username}")
-            
-            raise HTTPException(
-                status_code = status.HTTP_401_UNAUTHORIZED,
-                detail = "Invalid refresh token"
-            )
-
-        access_token = await create_access_token({
-            "id": payload["id"], 
+        new_access_token = await create_access_token({
+            "id": payload["id"],
             "role": payload["role"]
         })
 
         return {
-            "access_token": access_token,
-            "token_type": "bearer"
+            "access_token": new_access_token,
+            "token_type": "bearer",
+            "user": payload
         }
 
     except HTTPException:
         raise
 
     except Exception as error:
-        logger.error(f"Unexpected Refresh Token Exception: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in refresh_token_service: {error}", exc_info = True)
+        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
@@ -213,30 +179,33 @@ async def handle_refresh_token(request: Request) -> Dict[str, str]:
 
 
 
-async def handle_logout(
+async def logout_service(
     request: Request
 ) -> Response:
-    
+
     refresh_token = request.cookies.get("jwt")
+    auth_header = request.headers.get("Authorization")
     response = Response(status_code = status.HTTP_204_NO_CONTENT)
 
-    if not refresh_token:
-        response.delete_cookie("jwt")
-        return response
-
-    try:
-        payload = await verify_refresh_token(refresh_token)
-        user = await User.get(payload["id"])
+    if refresh_token:
+        try:
+            payload = await verify_refresh_token(refresh_token)
+            await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{payload['id']}")
         
-        if user:
-            await user.update({ 
-                "$set": {
-                    "refresh_token": None
-                }
-            })
+        except Exception:
+            pass
 
-    except Exception as error:
-        logger.error(f"Logout Exception: {error}", exc_info = True)
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            access_token = auth_header.split(" ")[1]
+           
+            await redis_client.set(
+                name = f"{REDIS_BLACKLIST_PREFIX}{access_token}",
+                value = "revoked",
+                ex = 15 * 60 
+            )
+        except Exception:
+            pass
 
     response.delete_cookie("jwt")
     return response
@@ -244,38 +213,47 @@ async def handle_logout(
 
 
 
-async def handle_delete_user(
+async def delete_account_service(
     request: Request
 ) -> Response:
-    
-    refresh_token = request.cookies.get("jwt")
-    response = Response(status_code = status.HTTP_204_NO_CONTENT)
-
-    if not refresh_token:
-        response.delete_cookie("jwt")
-        return response
-    
     try:
-       
-        payload = await verify_refresh_token(refresh_token)
+        refresh_token = request.cookies.get("jwt")
+        auth_header = request.headers.get("Authorization")
         
-        user: User | None = await User.get(payload["id"])
+        if not refresh_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        payload = await verify_refresh_token(refresh_token)
+        user = await User.get(BeanieObjectId(payload["id"]))
 
         if not user:
             raise HTTPException(
                 status_code = status.HTTP_404_NOT_FOUND,
                 detail = "User not found"
             )
-    
+
+        if auth_header and auth_header.startswith("Bearer "):
+            access_token = auth_header.split(" ")[1]
+           
+            await redis_client.set(
+                name = f"{REDIS_BLACKLIST_PREFIX}{access_token}",
+                value = "revoked",
+                ex = 15 * 60
+            )
+
+        await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{user.id}")
         await user.delete()
 
-        return Response(status_code = status.HTTP_204_NO_CONTENT)
-    
+        response = Response(status_code = status.HTTP_204_NO_CONTENT)
+        response.delete_cookie("jwt")
+        
+        return response
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in delete_user_by_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in delete_account_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
