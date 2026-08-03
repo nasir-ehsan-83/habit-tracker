@@ -169,3 +169,43 @@ async def get_daily_tracks_service(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+    
+
+
+
+async def get_track_history_service(
+    owner_id: BeanieObjectId,
+    habit_id: BeanieObjectId,
+    from_date: date,
+    to_date: date
+) -> List[Track]:
+    try:
+        if (to_date - from_date).days < 7:
+            raise HTTPException(
+                status_code = status.HTTP_400_BAD_REQUEST,
+                detail = "Invalid date range. History range must be at least 7 days."
+            )
+        
+        query: Dict[str, Any] = {
+            "owner_id": owner_id,
+            "habit_id": habit_id,
+            "date": {
+                "$gte": from_date, 
+                "$lte": to_date
+            }
+        }
+
+        tracks = await Track.find(query).to_list()
+
+        return tracks
+    
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in get_track_history: {error}", exc_info = True)
+    
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
