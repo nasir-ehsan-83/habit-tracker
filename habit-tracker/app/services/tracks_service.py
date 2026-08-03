@@ -7,6 +7,7 @@ from typing import (
 from beanie import BeanieObjectId
 from fastapi import (
     HTTPException,
+    Response,
     status
 )
 
@@ -22,7 +23,7 @@ from app.models import Track
 
 async def create_track_service(
     owner_id:   BeanieObjectId,
-    track_in:      TrackCreate
+    track_in:   TrackCreate
 ) -> Track:
     
     try:
@@ -65,31 +66,25 @@ async def create_track_service(
 
 
 async def update_track_service(
-    owner_id:       BeanieObjectId,
-    habit_id:       BeanieObjectId,
-    updated_data:   TrackUpdate
+    id: BeanieObjectId,
+    owner_id: BeanieObjectId,
+    updated_data: TrackUpdate
 ) -> Track:
-    
     try:
-        query: Dict[str, Any] = {
-            "owner_id": owner_id,
-            "habit_id": habit_id
-        }
-
-        track: Track | None = await Track.find_one(query)
+        track = await Track.find_one(
+            Track.id == id,
+            Track.owner_id == owner_id
+        )
 
         if not track:
             raise HTTPException(
                 status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Track does not exist"
+                detail = "Track not found"
             )
         
         new_data: Dict[str, Any] = updated_data.model_dump(exclude_unset = True)
 
-        await track.set({
-            **new_data
-        })
-        await track.sync()
+        await track.set(new_data)
 
         return track
 
@@ -97,39 +92,33 @@ async def update_track_service(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in udpate_track_service: {error}", exc_info = True)
+        logger.error(f"Unexpected error in update_track_service: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
-    
 
 
 
-async def get_tracks_service(
-    owner_id:   BeanieObjectId,
-    habit_id:   BeanieObjectId | None,
-    from_date:  date,
-    to_date:    date
+
+async def get_daily_tracks_service(
+    owner_id:       BeanieObjectId,
+    habit_id:       BeanieObjectId | None,
+    target_date:    date
+
 ) -> List[Track]:
-    
     try:
-
         query: Dict[str, Any] = {
             "owner_id": owner_id,
-            "date": {
-                "$gt": from_date, 
-                "$ls": to_date
-            }
+            "date": target_date
+
         }
 
         if habit_id is not None:
             query["habit_id"] = habit_id
 
-        tracks: List[Track] = Track.find_all(
-            **query,
-        ) # type: ignore
+        tracks = await Track.find(query).to_list()
 
         return tracks
     
@@ -137,7 +126,7 @@ async def get_tracks_service(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in get_tracks_service: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_daily_tracks_service: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
