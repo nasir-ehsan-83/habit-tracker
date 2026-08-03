@@ -19,7 +19,10 @@ from .tracks import (
     TrackOut,
     TrackUpdate
 )
-
+from .validator import (
+    VerifyEmail,
+    ResetPassword
+)
 
 __all__ = [
     "UserCreate",
@@ -34,5 +37,7 @@ __all__ = [
     "TokenData",
     "TrackCreate",
     "TrackOut",
-    "TrackUpdate"
+    "TrackUpdate",
+    "VerifyEmail",
+    "ResetPassword"
 ]
