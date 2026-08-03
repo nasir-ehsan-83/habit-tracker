@@ -27,11 +27,12 @@ from app.schemas import (
     PreferenceUpdate
 )
 from app.services.users_service import (
-    get_user,
-    update_avatar, 
-    update_user,
+    get_user_service,
+    update_avatar_service, 
+    update_user_service,
     get_stats_service,
-    get_preference_service
+    get_preference_service,
+    update_preference_service
 )
 
 
@@ -52,11 +53,11 @@ router = APIRouter(
     '/me', 
     response_model = UserPrivateOut
 )
-async def get_user_id(
+async def get_user_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
 ) -> User:
 
-    return await get_user(current_user.id)
+    return await get_user_service(current_user.id)
 
 
 
@@ -65,24 +66,24 @@ async def get_user_id(
     '/me', 
     response_model = UserPrivateOut
 )
-async def update_user_id(
+async def update_user_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     user_data:      Annotated[UserUpdate, Body(...)]
 ) -> User :
 
-    return await update_user(current_user.id, user_data)
+    return await update_user_service(current_user.id, user_data)
 
 
 
 @router.patch(
     '/me/avatar'
 )
-async def update_user_avatar(
+async def update_user_avatar_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     new_url:        str
 ) -> User:
     
-    return await update_avatar(current_user.id, new_url)
+    return await update_avatar_service(current_user.id, new_url)
 
 
 
@@ -91,7 +92,7 @@ async def update_user_avatar(
     '/me/stats',
     response_model = Tuple[User, List[Habit]] 
 )
-async def get_user_stats(
+async def get_user_stats_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
 ) -> Tuple[User, List[Habit]]:
     
@@ -104,8 +105,24 @@ async def get_user_stats(
     '/preference',
     response_model = PreferenceOut
 )
-async def get_user_preference(
+async def get_user_preference_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)]
 ) -> UserPreference:
 
     return await get_preference_service(current_user.id)
+
+
+
+
+@router.put(
+    '/preference',
+    response_model = PreferenceOut
+)
+async def create_or_update_user_preference_route(
+    current_user:       Annotated[TokenData, Depends(get_current_user)],
+    preference_data:    Annotated[PreferenceUpdate, Body(...)]
+) -> UserPreference:
+
+    return await update_preference_service(current_user.id, preference_data)
+
+

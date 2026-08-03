@@ -1,10 +1,11 @@
 from typing import (
+    Any,
+    Dict,
     List, 
     Tuple
 )
 from fastapi import (
     HTTPException, 
-    Response, 
     status
 )
 from datetime import (
@@ -20,12 +21,15 @@ from app.models import (
     Habit,
     UserPreference
 )
-from app.schemas import UserUpdate
+from app.schemas import (
+    UserUpdate,
+    PreferenceUpdate    
+)
 from app.services.habits_service import get_all_habits_service
 
 
 
-async def get_user(
+async def get_user_service(
     id: BeanieObjectId
 ) -> User:
     try:
@@ -57,7 +61,7 @@ async def get_user(
 
 
 
-async def update_user(
+async def update_user_service(
     id:     BeanieObjectId, 
     data:   UserUpdate
 ) -> User:
@@ -105,7 +109,7 @@ async def update_user(
 
 
 
-async def update_avatar(
+async def update_avatar_service(
     id:     BeanieObjectId,
     url:    str
 ) -> User:
@@ -203,3 +207,37 @@ async def get_preference_service(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+        
+
+
+
+async def update_preference_service(
+    user_id: BeanieObjectId,
+    preference_data: PreferenceUpdate
+) -> UserPreference:
+    try:
+        preference = await UserPreference.find_one(UserPreference.owner_id == user_id)
+
+        if not preference:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "User preferences not found"
+            )
+
+        update_dict: Dict[str, Any] = preference_data.model_dump(exclude_unset = True)
+
+        await preference.set(update_dict)
+
+        return preference
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.error(f"Unexpected error in update_preference: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+

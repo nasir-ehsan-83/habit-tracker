@@ -56,7 +56,7 @@ router = APIRouter(
     response_model = HabitPrivateOut
 )
 @limiter.limit('3/minute')
-async def create_habit_router(
+async def create_habit_route(
     request:        Request,
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     habit:          Annotated[HabitCreate, Body(...)], 
@@ -71,7 +71,7 @@ async def create_habit_router(
     '/', 
     response_model = List[HabitPrivateOut]
 )
-async def get_all_habits_router(
+async def get_all_habits_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)], 
     category:       Annotated[HabitCategory, Query(default = "")],
     completed:      Annotated[bool, Query(default = False)],
@@ -88,7 +88,7 @@ async def get_all_habits_router(
     '/{id}', 
     response_model = HabitPrivateOut
 )
-async def get_habit_router(
+async def get_habit_route(
     id: Annotated[BeanieObjectId, Path()]
 ) -> Habit:
 
@@ -101,7 +101,7 @@ async def get_habit_router(
     '/category/{category}',
     response_model = HabitPrivateOut
 )
-async def get_habit_by_category_router(
+async def get_habit_by_category_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)], 
     category:       Annotated[HabitCategory, Path()]
 ) -> List[Habit]:
@@ -115,7 +115,7 @@ async def get_habit_by_category_router(
     '/{id}', 
     response_model = HabitPrivateOut
 )
-async def update_habit_router(
+async def update_habit_route(
     id:             Annotated[BeanieObjectId, Path()], 
     update_data:    Annotated[HabitUpdate, Body(...)]
 ) -> Habit:
@@ -126,7 +126,7 @@ async def update_habit_router(
 
 
 @router.delete('/{id}')
-async def delete_habit_router(
+async def delete_habit_route(
     id: Annotated[BeanieObjectId, Path()]
 ) :
 
@@ -139,7 +139,7 @@ async def delete_habit_router(
     '/{id}/archive',
     response_model = Dict[str, str]
 )
-async def archive_habit_router(
+async def archive_habit_route(
     id: Annotated[BeanieObjectId, Path()]
 ) -> Dict[str, str]:
     
@@ -152,7 +152,7 @@ async def archive_habit_router(
     '/archived',
     response_model = List[HabitPrivateOut]
 )
-async def get_archived_habits_router(
+async def get_archived_habits_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)]
 ) -> List[Habit]:
     
