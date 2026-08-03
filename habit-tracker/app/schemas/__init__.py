@@ -23,6 +23,11 @@ from .validator import (
     VerifyEmail,
     ResetPassword
 )
+from .preferences import (
+    PreferenceCreate,
+    PreferenceOut,
+    PreferenceUpdate
+)
 
 __all__ = [
     "UserCreate",
@@ -39,5 +44,8 @@ __all__ = [
     "TrackOut",
     "TrackUpdate",
     "VerifyEmail",
-    "ResetPassword"
+    "ResetPassword",
+    "PreferenceCreate",
+    "PreferenceOut",
+    "PreferenceUpdate"
 ]
