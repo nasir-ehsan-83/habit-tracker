@@ -134,3 +134,15 @@ async def forget_password_route(
     
     return await forget_password_service(email)
 
+
+
+
+@router.post(
+    '/verify-email',
+    response_model = str
+)
+async def verify_email_route(
+    data:   Annotated[VerifyEmail, Body(...)]
+) -> str:
+    
+    return await verify_email_service(data)

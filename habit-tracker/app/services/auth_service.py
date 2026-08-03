@@ -23,6 +23,7 @@ from app.core import (
 )
 from app.utils import (
     generate_code,
+    generate_token,
     hash_token,
     send_email
 )
@@ -32,7 +33,8 @@ from app.models import (
     UserPreference
 )
 from app.schemas import (
-    UserCreate
+    UserCreate,
+    VerifyEmail
 )
 
 
@@ -317,4 +319,54 @@ async def forget_password_service(
 
 
 
+
+async def verify_email_service(
+    data: VerifyEmail
+) -> str:
+    try:
+        user: User | None = await User.find_one(User.email == data.email)
+
+        if not user:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "User not found"
+            )
+        
+        saved_code = await redis_client.get(f"{REDIS_VERIFY_CODE_PREFIX}{data.email}")
+
+        if isinstance(saved_code, bytes):
+            saved_code = saved_code.decode("utf-8")
+
+        hashed_input_code = await hash_token(data.verify_code)
+
+        if not saved_code or saved_code != hashed_input_code:
+            raise HTTPException(
+                status_code = status.HTTP_403_FORBIDDEN,
+                detail = "Token expired or blacklisted"
+            )
+
+        await redis_client.delete(f"{REDIS_VERIFY_CODE_PREFIX}{data.email}")
+
+        verify_token = await generate_token()
+        hashed_token = await hash_token(verify_token)
+
+        await redis_client.set(
+            name = f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}",
+            value = hashed_token,
+            ex = 5 * 60
+        )
+
+        return verify_token
+    
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in verify_email_service: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
 
