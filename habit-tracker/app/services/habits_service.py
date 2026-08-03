@@ -19,21 +19,21 @@ from app.schemas.habits import (
     HabitCreate, 
     HabitUpdate
 )
-from app.config.logging_handler import logger
-from app.schemas.token import TokenData
+from app.config import logger
 from app.utils.enum import HabitCategory
-from app.utils.pagination import paginate
+from app.utils import paginate
 
 
-async def create_new_habit(
-    habit_in: HabitCreate, 
-    current_user: TokenData
+
+async def create_habit_service(
+    habit_in:   HabitCreate, 
+    owner_id:   BeanieObjectId
 ) -> Habit:
     try:
         
         found_habit: Habit | None = await Habit.find_one(
             Habit.name == habit_in.name,
-            Habit.owner_id == BeanieObjectId(current_user.id),
+            Habit.owner_id == owner_id,
             Habit.status != "deleted"
         )
         
@@ -51,7 +51,7 @@ async def create_new_habit(
         
         new_habit: Habit = Habit(
             **habit_in.model_dump(),
-            owner_id = BeanieObjectId(current_user.id)
+            owner_id = owner_id
         )
 
         return await new_habit.insert() # type: ignore
@@ -68,7 +68,7 @@ async def create_new_habit(
         )
     
     except Exception as error:
-        logger.error(f"Unexpected error in create_new_habit: {error}", exc_info = True)
+        logger.error(f"Unexpected error in create_habit_service: {error}", exc_info = True)
        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -78,19 +78,19 @@ async def create_new_habit(
 
 
 
-async def get_all_habits(
-    id: BeanieObjectId, 
-    category: HabitCategory | str = "",
-    completed: bool = False,
-    page: int = 1, 
-    limit: int = 10
+async def get_all_habits_service(
+    owner_id:   BeanieObjectId, 
+    category:   HabitCategory | str = "",
+    completed:  bool = False,
+    page:       int = 1, 
+    limit:      int = 10
 ) -> List[Habit]:
     try:
         
         skip, limit_val = paginate(page, limit)
 
         query: Dict[str, Any] = {
-            "owner_d": id,
+            "owner_d": owner_id,
             "status": "deleted",
             "category": category
         }
@@ -101,7 +101,7 @@ async def get_all_habits(
         return await Habit.find(query).skip(skip).limit(limit_val).sort("+created_at").to_list()
 
     except Exception as error:
-        logger.error(f"Unexpected error in get_all_habits_owner: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_all_habits_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -111,15 +111,13 @@ async def get_all_habits(
 
 
 
-async def get_habit(
-    id: BeanieObjectId, 
-    current_user: TokenData
+async def get_habit_service(
+    habit_id:   BeanieObjectId,
 ) -> Habit:
     try:
         
         existing_habit = await Habit.find_one(
-            Habit.id == BeanieObjectId(id),
-            Habit.owner_id == BeanieObjectId(current_user.id),
+            Habit.id == habit_id,
             Habit.status != "deleted"   
         )
 
@@ -135,7 +133,7 @@ async def get_habit(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in get_habit_by_name: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -145,20 +143,20 @@ async def get_habit(
 
 
 
-async def get_habits_by_category(
-    id: BeanieObjectId,
-    category: HabitCategory
+async def get_habits_by_category_service(
+    id:             BeanieObjectId,
+    category:       HabitCategory
 ) -> List[Habit]:
     
     try:
         return await Habit.find(
-            Habit.owner_id == BeanieObjectId(id), 
+            Habit.owner_id == id, 
             Habit.status != "deleted",
             Habit.category == category
         ).sort("created_at").to_list()
 
     except Exception as error:
-        logger.error(f"Unexpected error in get_habit_by_name: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -169,16 +167,14 @@ async def get_habits_by_category(
 
 
 
-async def update_habit(
-    id: BeanieObjectId, 
-    update_habit: HabitUpdate, 
-    current_user: TokenData
+async def update_habit_service(
+    habit_id:             BeanieObjectId, 
+    update_habit:   HabitUpdate,
 ) -> Habit:
     try:
         
         existing_habit = await Habit.find_one(
-            Habit._class_id == BeanieObjectId(id),
-            Habit.owner_id == BeanieObjectId(current_user.id),
+            Habit._class_id == habit_id,
             Habit.status != "deleted"
         )
 
@@ -197,9 +193,7 @@ async def update_habit(
             "updated_at": datetime.now(timezone.utc)
         })
         
-        await existing_habit.update({
-            "$set": update_data
-        })
+        await existing_habit.set(**update_data)
         
         await existing_habit.sync()
         
@@ -209,7 +203,7 @@ async def update_habit(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in update_habit_by_name: {error}", exc_info = True)
+        logger.error(f"Unexpected error in update_habit_service: {error}", exc_info = True)
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
@@ -218,15 +212,13 @@ async def update_habit(
 
 
 
-async def delete_habit(
-    id: BeanieObjectId, 
-    current_user: TokenData
+async def delete_habit_service(
+    habit_id:   BeanieObjectId,
 ) -> Response:
     try:
     
         existing_habit = await Habit.find_one(
-            Habit.id == BeanieObjectId(id),
-            Habit.owner_id == BeanieObjectId(current_user.id),
+            Habit.id == habit_id,
             Habit.status != "deleted"
         )
         
@@ -236,10 +228,8 @@ async def delete_habit(
                 detail = "Habit not found"
             )
         
-        await existing_habit.update({
-            "$set": {
-                "status": "deleted"
-            }
+        await existing_habit.set({
+            "status": "deleted"
         })
 
         return Response(status_code = status.HTTP_204_NO_CONTENT)
@@ -248,7 +238,46 @@ async def delete_habit(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in delete_habit_by_name: {error}", exc_info = True)
+        logger.error(f"Unexpected error in delete_habit_service: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
+
+
+
+async def archive_habit_service(
+    habit_id:   BeanieObjectId
+) -> Dict[str, str]:
+    
+    try:
+
+        habit = await Habit.find_one(
+            Habit.id == habit_id,
+            Habit.status != "deleted"
+        )
+        
+        if not habit:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "Habit not found"
+            )
+        
+        await habit.set({
+            "status": "archived"
+        })
+
+        return {
+            "message": "Habit archived successfully"
+        }
+
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in archive_habit_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,

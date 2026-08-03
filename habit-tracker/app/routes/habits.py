@@ -1,5 +1,6 @@
 from typing import (
     Annotated,
+    Dict,
     List
 )
 from beanie import BeanieObjectId
@@ -11,24 +12,28 @@ from fastapi import (
     Query,
     Request
 )
-from app.models.habits import Habit
-from app.dependencies.current_user import get_current_user
-from app.dependencies.check_roles import require_role
-from app.schemas.token import TokenData
+
+from app.dependencies import (
+    get_current_user,
+    required_role
+)
 from app.utils.enum import HabitCategory
-from app.utils.limiter import limiter
-from app.schemas.habits import (
+from app.utils import limiter
+from app.models import Habit
+from app.schemas import (
     HabitCreate, 
     HabitPrivateOut,
-    HabitUpdate
+    HabitUpdate,
+    TokenData
 )
 from app.services.habits_service import(
-    create_new_habit,
-    get_habit,
-    get_all_habits,
-    get_habits_by_category,
-    update_habit,
-    delete_habit
+    create_habit_service,
+    get_habit_service,
+    get_all_habits_service,
+    get_habits_by_category_service,
+    update_habit_service,
+    delete_habit_service,
+    archive_habit_service
 )
 
 
@@ -38,7 +43,7 @@ router = APIRouter(
     prefix = '/api/habits',
     tags = ["Habits"],
     dependencies = [
-        Depends(require_role(["USER"]))
+        Depends(required_role(["USER"]))
     ]
 )
 
@@ -50,13 +55,13 @@ router = APIRouter(
     response_model = HabitPrivateOut
 )
 @limiter.limit('3/minute')
-async def create_habit(
+async def create_habit_router(
     request:        Request,
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     habit:          Annotated[HabitCreate, Body(...)], 
 ) -> Habit:
     
-    return await create_new_habit(habit, current_user)
+    return await create_habit_service(habit, current_user.id)
 
 
 
@@ -65,7 +70,7 @@ async def create_habit(
     '/', 
     response_model = List[HabitPrivateOut]
 )
-async def get_habits(
+async def get_all_habits_router(
     current_user:   Annotated[TokenData, Depends(get_current_user)], 
     category:       Annotated[HabitCategory, Query(default = "")],
     completed:      Annotated[bool, Query(default = False)],
@@ -73,7 +78,7 @@ async def get_habits(
     limit:          Annotated[int, Query(default = 10, gt = 0)]
 ) -> List[Habit]:
     
-    return await get_all_habits(current_user.id, category, completed, page, limit)
+    return await get_all_habits_service(current_user.id, category, completed, page, limit)
 
 
 
@@ -82,12 +87,11 @@ async def get_habits(
     '/{id}', 
     response_model = HabitPrivateOut
 )
-async def get_habit_id(
-    current_user:   Annotated[TokenData, Depends(get_current_user)], 
-    id:             Annotated[BeanieObjectId, Path()]
+async def get_habit_router(
+    id: Annotated[BeanieObjectId, Path()]
 ) -> Habit:
 
-    return await get_habit(id, current_user)
+    return await get_habit_service(id)
 
 
 
@@ -96,12 +100,12 @@ async def get_habit_id(
     '/category/{category}',
     response_model = HabitPrivateOut
 )
-async def get_habit_category(
+async def get_habit_by_category_router(
     current_user:   Annotated[TokenData, Depends(get_current_user)], 
     category:       Annotated[HabitCategory, Path()]
 ) -> List[Habit]:
     
-    return await get_habits_by_category(current_user.id, category)
+    return await get_habits_by_category_service(current_user.id, category)
 
 
 
@@ -110,21 +114,32 @@ async def get_habit_category(
     '/{id}', 
     response_model = HabitPrivateOut
 )
-async def update_habit_id(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
+async def update_habit_router(
     id:             Annotated[BeanieObjectId, Path()], 
     update_data:    Annotated[HabitUpdate, Body(...)]
 ) -> Habit:
     
-    return await update_habit(id, update_data, current_user)
+    return await update_habit_service(id, update_data)
 
 
 
 
 @router.delete('/{id}')
-async def delete_habit_id(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    id:             Annotated[BeanieObjectId, Path()]
+async def delete_habit_router(
+    id: Annotated[BeanieObjectId, Path()]
 ) :
 
-    return await delete_habit(id, current_user)
+    return await delete_habit_service(id)
+
+
+
+
+@router.post(
+    '/{id}/archive',
+    response_model = Dict[str, str]
+)
+async def archive_habit_router(
+    id: Annotated[BeanieObjectId, Path()]
+) -> Dict[str, str]:
+    
+    return await archive_habit_service(id)
