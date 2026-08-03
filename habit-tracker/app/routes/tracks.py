@@ -9,7 +9,8 @@ from fastapi import (
     Depends,
     Body,
     Path,
-    Query
+    Query,
+    Response
 )
 
 from app.dependencies import (
@@ -26,7 +27,8 @@ from app.schemas import (
 from app.services.tracks_service import(
     create_track_service,
     update_track_service,
-    get_tracks_service
+    get_daily_tracks_service,
+    delete_track_service,
 )
 
 
@@ -55,16 +57,30 @@ async def create_track_route(
 
 
 @router.patch(
-    '/{habit_id}',
+    '/{id}',
     response_model = TrackOut
 )
 async def update_track_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
-    habit_id:       Annotated[BeanieObjectId, Path()],
+    id:             Annotated[BeanieObjectId, Path()],
     updated_data:   Annotated[TrackUpdate, Body(...)]
 ) -> Track:
     
-    return await update_track_service(current_user.id, habit_id, updated_data)
+    return await update_track_service(id, current_user.id, updated_data)
+
+
+
+
+@router.delete(
+    '/{id}',
+    response_model = Response
+)
+async def delete_track_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    id:             Annotated[BeanieObjectId, Path()]
+) -> Response:
+
+    return await delete_track_service(id, current_user.id)
 
 
 
@@ -73,11 +89,10 @@ async def update_track_route(
     '/daily',
     response_model = List[TrackOut]
 )
-async def get_tracks_route(
+async def get_daily_tracks_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     habit_id:       Annotated[BeanieObjectId, Query(default = None)],
-    from_date:      Annotated[date, Query()],
-    to_date:        Annotated[date, Query()]
+    target_date:    Annotated[date, Query()],
 ) -> List[Track]:
     
-    return await get_tracks_service(current_user.id, habit_id, from_date, to_date)
+    return await get_daily_tracks_service(current_user.id, habit_id, target_date)

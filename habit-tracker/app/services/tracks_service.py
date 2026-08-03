@@ -102,6 +102,43 @@ async def update_track_service(
 
 
 
+async def delete_track_service(
+    id: BeanieObjectId,
+    owner_id: BeanieObjectId
+) -> Response:
+    try:
+        track = await Track.get(id)
+
+        if not track:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "Track not found"
+            )
+
+        if track.owner_id != owner_id:
+            raise HTTPException(
+                status_code = status.HTTP_403_FORBIDDEN,
+                detail = "You do not have permission to delete this track"
+            )
+        
+        await track.delete()
+
+        return Response(status_code = status.HTTP_204_NO_CONTENT)
+    
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.error(f"Unexpected error in delete_track_service: {error}", exc_info = True)
+
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+
+
+
+
 async def get_daily_tracks_service(
     owner_id:       BeanieObjectId,
     habit_id:       BeanieObjectId | None,
