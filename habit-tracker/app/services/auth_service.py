@@ -10,6 +10,7 @@ from fastapi import (
     status
 )
 from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import EmailStr
 from pymongo.errors import DuplicateKeyError
 
 from app.config import logger
@@ -20,8 +21,16 @@ from app.core import (
     create_refresh_token, 
     verify_refresh_token
 )
+from app.utils import (
+    generate_code,
+    hash_token,
+    send_email
+)
 from app.db import redis_client
-from app.models import User
+from app.models import (
+    User,
+    UserPreference
+)
 from app.schemas import (
     UserCreate
 )
@@ -32,6 +41,8 @@ from app.schemas import (
 REDIS_REFRESH_PREFIX = "auth:refresh-token:"
 REDIS_BLACKLIST_PREFIX = "auth:blacklist:"
 
+REDIS_VERIFY_CODE_PREFIX = "auth:verify-code:"
+REDIS_VERIFY_TOKEN_PREFIX = "auth:verify-token:"
 
 
 
@@ -43,8 +54,12 @@ async def create_user_service(
             **user.model_dump(exclude={"password"}),
             password = await hash_password(user.password)
         )
+        saved_user = await new_user.insert()
 
-        return await new_user.insert()
+        default_preference = UserPreference(owner_id = saved_user.id)
+        await default_preference.insert()
+
+        return saved_user
 
     except DuplicateKeyError:
         
@@ -259,3 +274,47 @@ async def delete_account_service(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+
+
+
+
+async def forget_password_service(
+    email: EmailStr
+) -> Dict[str, str]:
+    try:
+        user = await User.find_one(User.email == email)
+
+        if not user:
+            return {
+                "message": "Verification code sent successfully"
+            }
+
+        verify_code = await generate_code()
+        hashed_code = await hash_token(verify_code)
+
+        await redis_client.set(
+            name = f"{REDIS_VERIFY_CODE_PREFIX}{email}",
+            value = hashed_code,
+            ex = 5 * 60
+        )
+
+        await send_email(email, verify_code)
+        
+        return {
+            "message": "Verification code sent successfully"
+        }
+    
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in forget_password_service: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+
+
+
+
