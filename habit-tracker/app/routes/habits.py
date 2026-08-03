@@ -33,7 +33,8 @@ from app.services.habits_service import(
     get_habits_by_category_service,
     update_habit_service,
     delete_habit_service,
-    archive_habit_service
+    archive_habit_service,
+    get_archived_habits_service
 )
 
 
@@ -143,3 +144,16 @@ async def archive_habit_router(
 ) -> Dict[str, str]:
     
     return await archive_habit_service(id)
+
+
+
+
+@router.get(
+    '/archived',
+    response_model = List[HabitPrivateOut]
+)
+async def get_archived_habits_router(
+    current_user:   Annotated[TokenData, Depends(get_current_user)]
+) -> List[Habit]:
+    
+    return await get_archived_habits_service(current_user.id)

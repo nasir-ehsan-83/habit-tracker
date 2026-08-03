@@ -149,6 +149,7 @@ async def get_habits_by_category_service(
 ) -> List[Habit]:
     
     try:
+        
         return await Habit.find(
             Habit.owner_id == id, 
             Habit.status != "deleted",
@@ -279,6 +280,30 @@ async def archive_habit_service(
     except Exception as error:
         logger.error(f"Unexpected error in archive_habit_service: {error}", exc_info = True)
         
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
+
+
+
+async def get_archived_habits_service(
+    owner_id:   BeanieObjectId
+) -> List[Habit]:
+
+    try:
+
+        return await Habit.find(
+            Habit.owner_id == owner_id,
+            Habit.status == "archived"
+        ).sort("created_at").to_list()
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
