@@ -146,3 +146,16 @@ async def verify_email_route(
 ) -> str:
     
     return await verify_email_service(data)
+
+
+
+
+@router.post(
+    '/reset-password',
+    response_model = UserPrivateOut
+)
+async def reset_password_route(
+    data:   Annotated[ResetPassword, Body(...)]
+) -> User:
+    
+    return await reset_password_service(data)

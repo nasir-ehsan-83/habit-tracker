@@ -34,7 +34,8 @@ from app.models import (
 )
 from app.schemas import (
     UserCreate,
-    VerifyEmail
+    VerifyEmail,
+    ResetPassword
 )
 
 
@@ -370,3 +371,52 @@ async def verify_email_service(
         )
     
 
+
+
+async def reset_password_service(
+    data: ResetPassword
+) -> User:
+    try:
+        user: User | None = await User.find_one(User.email == data.email) 
+
+        if not user:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail =  "User not found"
+            )
+        
+        saved_token = await redis_client.get(f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}")
+
+        if isinstance(saved_token, bytes):
+            saved_token = saved_token.decode("utf-8")
+
+        hashed_input_token = await hash_token(data.verify_token)
+
+        if not saved_token or saved_token != hashed_input_token:
+            raise HTTPException(
+                status_code = status.HTTP_403_FORBIDDEN,
+                detail = "Token expired or blacklisted"
+            )
+
+        await redis_client.delete(f"{REDIS_VERIFY_TOKEN_PREFIX}{data.email}")
+        await redis_client.delete(f"{REDIS_REFRESH_PREFIX}{user.id}")
+
+        new_hashed_password = await hash_password(data.new_password)
+
+        await user.set({
+            "password": new_hashed_password
+        })
+        await user.sync()
+
+        return user
+
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in reset_password_service: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
