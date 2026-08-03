@@ -14,13 +14,14 @@ from datetime import (
 from beanie import BeanieObjectId
 
 from app.core import hash_password
-from app.config.logging_handler import logger 
+from app.config import logger 
 from app.models import (
     User,
-    Habit
+    Habit,
+    UserPreference
 )
 from app.schemas import UserUpdate
-from app.services.habits_service import get_all_habits
+from app.services.habits_service import get_all_habits_service
 
 
 
@@ -46,7 +47,7 @@ async def get_user(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in get_user_by_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_user: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -94,7 +95,7 @@ async def update_user(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in update_user_by_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in update_user: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -133,7 +134,7 @@ async def update_avatar(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in update_user_by_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in update_avatar: {error}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -143,7 +144,7 @@ async def update_avatar(
 
 
     
-async def get_stats(
+async def get_stats_service(
     id:     BeanieObjectId
 ) -> Tuple[User, List[Habit]]:
     
@@ -159,7 +160,7 @@ async def get_stats(
                 detail = "User not found"
             )
         
-        habits: List[Habit] = await get_all_habits(id)
+        habits: List[Habit] = await get_all_habits_service(id)
 
         return user, habits
     
@@ -168,8 +169,36 @@ async def get_stats(
         raise
     
     except Exception as error:
-        logger.error(f"Unexpected error in update_user_by_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_stats: {error}", exc_info = True)
     
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+
+
+
+
+async def get_preference_service(
+    owner_id: BeanieObjectId
+) -> UserPreference:
+    try:
+        preference = await UserPreference.find_one(UserPreference.owner_id == owner_id)
+
+        if not preference:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "User preferences not found"
+            )
+
+        return preference
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        logger.error(f"Unexpected error in get_preference: {error}", exc_info = True)
+        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"

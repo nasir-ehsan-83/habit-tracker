@@ -1,29 +1,37 @@
-from typing import Annotated, List, Sequence, Tuple
-from beanie import BeanieObjectId
+from typing import (
+    Annotated, 
+    List, 
+    Tuple
+)
 from fastapi import (
     APIRouter,
     Body, 
     Depends,
-    Path,
-    Query,
-    Request
 )
 
-from app.dependencies.current_user import get_current_user
-from app.dependencies.check_roles import require_role
-from app.models.users import User
-from app.models.habits import Habit
-from app.schemas.token import TokenData
-from app.utils.limiter import limiter
-from app.schemas.users import (
+from app.utils import limiter
+from app.dependencies import (
+    get_current_user,
+    required_role
+)
+from app.models import (
+    User, 
+    Habit,
+    UserPreference
+)
+from app.schemas import (
     UserPrivateOut,
-    UserUpdate
+    UserUpdate,
+    TokenData,
+    PreferenceOut,
+    PreferenceUpdate
 )
 from app.services.users_service import (
     get_user,
     update_avatar, 
     update_user,
-    get_stats
+    get_stats_service,
+    get_preference_service
 )
 
 
@@ -33,7 +41,7 @@ router = APIRouter(
     prefix = '/api/users',
     tags = ['User'],
     dependencies = [
-        Depends(require_role(["ADMIN", "USER"]))
+        Depends(required_role(["ADMIN", "USER"]))
     ]
 )
 
@@ -87,4 +95,17 @@ async def get_user_stats(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
 ) -> Tuple[User, List[Habit]]:
     
-    return await get_stats(current_user.id)
+    return await get_stats_service(current_user.id)
+
+
+
+
+@router.get(
+    '/preference',
+    response_model = PreferenceOut
+)
+async def get_user_preference(
+    current_user:   Annotated[TokenData, Depends(get_current_user)]
+) -> UserPreference:
+
+    return await get_preference_service(current_user.id)
