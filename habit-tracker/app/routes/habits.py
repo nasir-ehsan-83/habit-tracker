@@ -34,6 +34,7 @@ from app.services.habits_service import(
     update_habit_service,
     delete_habit_service,
     archive_habit_service,
+    unarchive_habit_service,
     get_archived_habits_service
 )
 
@@ -144,6 +145,20 @@ async def archive_habit_route(
 ) -> Dict[str, str]:
     
     return await archive_habit_service(id)
+
+
+
+
+@router.post(
+    '/{id}/unarchive',
+    response_model = Dict[str, str]
+)
+async def unarchive_habit_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    id: Annotated[BeanieObjectId, Path()]
+) -> Dict[str, str]:
+    
+    return await unarchive_habit_service(id, current_user.id)
 
 
 

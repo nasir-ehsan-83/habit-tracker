@@ -288,6 +288,46 @@ async def archive_habit_service(
 
 
 
+async def unarchive_habit_service(
+    habit_id:   BeanieObjectId,
+    owner_id:   BeanieObjectId
+) -> Dict[str, str]:
+    
+    try:
+        habit = await Habit.find_one(
+            Habit.id == habit_id,
+            Habit.owner_id == owner_id,
+            Habit.status != "archived"
+        )
+        
+        if not habit:
+            raise HTTPException(
+                status_code = status.HTTP_404_NOT_FOUND,
+                detail = "Habit not found"
+            )
+        
+        await habit.set({
+            "status": "active"
+        })
+     
+        return {
+            "message": "Habit archived successfully"
+        }
+    
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in unarchive_habit_service: {error}", exc_info = True)
+        
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )   
+
+
+
+
 async def get_archived_habits_service(
     owner_id:   BeanieObjectId
 ) -> List[Habit]:
