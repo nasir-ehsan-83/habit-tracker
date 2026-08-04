@@ -155,7 +155,7 @@ async def archive_habit_route(
 )
 async def unarchive_habit_route(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
-    id: Annotated[BeanieObjectId, Path()]
+    id:             Annotated[BeanieObjectId, Path()]
 ) -> Dict[str, str]:
     
     return await unarchive_habit_service(id, current_user.id)
@@ -168,7 +168,9 @@ async def unarchive_habit_route(
     response_model = List[HabitPrivateOut]
 )
 async def get_archived_habits_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    page:           Annotated[int, Query(default = 1, gt = 0)], 
+    limit:          Annotated[int, Query(default = 10, gt = 0)]
 ) -> List[Habit]:
     
-    return await get_archived_habits_service(current_user.id)
+    return await get_archived_habits_service(current_user.id, page, limit)

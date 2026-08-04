@@ -329,15 +329,19 @@ async def unarchive_habit_service(
 
 
 async def get_archived_habits_service(
-    owner_id:   BeanieObjectId
+    owner_id:   BeanieObjectId,
+    page:       int,
+    limit:      int
 ) -> List[Habit]:
 
     try:
 
+        skip, limit_val = paginate(page, limit)
+
         return await Habit.find(
             Habit.owner_id == owner_id,
             Habit.status == "archived"
-        ).sort("created_at").to_list()
+        ).skip(skip).limit(limit_val).sort("+created_at").to_list()
 
     except HTTPException:
         raise
