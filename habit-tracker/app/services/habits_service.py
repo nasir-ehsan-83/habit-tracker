@@ -113,11 +113,13 @@ async def get_all_habits_service(
 
 async def get_habit_service(
     habit_id:   BeanieObjectId,
+    owner_id:   BeanieObjectId
 ) -> Habit:
     try:
         
         existing_habit = await Habit.find_one(
             Habit.id == habit_id,
+            Habit.owner_id == owner_id,
             Habit.status != "deleted"   
         )
 
@@ -144,14 +146,14 @@ async def get_habit_service(
 
 
 async def get_habits_by_category_service(
-    id:             BeanieObjectId,
+    owner_id:       BeanieObjectId,
     category:       HabitCategory
 ) -> List[Habit]:
     
     try:
         
         return await Habit.find(
-            Habit.owner_id == id, 
+            Habit.owner_id == owner_id, 
             Habit.status != "deleted",
             Habit.category == category
         ).sort("created_at").to_list()
@@ -170,12 +172,14 @@ async def get_habits_by_category_service(
 
 async def update_habit_service(
     habit_id:             BeanieObjectId, 
+    owner_id:             BeanieObjectId,
     update_habit:   HabitUpdate,
 ) -> Habit:
     try:
         
         existing_habit = await Habit.find_one(
             Habit._class_id == habit_id,
+            Habit.owner_id == owner_id,
             Habit.status != "deleted"
         )
 
@@ -215,11 +219,13 @@ async def update_habit_service(
 
 async def delete_habit_service(
     habit_id:   BeanieObjectId,
+    owner_id:   BeanieObjectId
 ) -> Response:
     try:
     
         existing_habit = await Habit.find_one(
             Habit.id == habit_id,
+            Habit.owner_id == owner_id,
             Habit.status != "deleted"
         )
         
@@ -250,13 +256,15 @@ async def delete_habit_service(
 
 
 async def archive_habit_service(
-    habit_id:   BeanieObjectId
+    habit_id:   BeanieObjectId,
+    owner_id:   BeanieObjectId
 ) -> Dict[str, str]:
     
     try:
 
         habit = await Habit.find_one(
             Habit.id == habit_id,
+            Habit.owner_id == owner_id,
             Habit.status != "deleted"
         )
         

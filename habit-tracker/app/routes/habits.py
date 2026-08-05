@@ -90,10 +90,11 @@ async def get_all_habits_route(
     response_model = HabitPrivateOut
 )
 async def get_habit_route(
-    id: Annotated[BeanieObjectId, Path()]
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    id:             Annotated[BeanieObjectId, Path()]
 ) -> Habit:
 
-    return await get_habit_service(id)
+    return await get_habit_service(id, current_user.id)
 
 
 
@@ -117,21 +118,23 @@ async def get_habit_by_category_route(
     response_model = HabitPrivateOut
 )
 async def update_habit_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
     id:             Annotated[BeanieObjectId, Path()], 
     update_data:    Annotated[HabitUpdate, Body(...)]
 ) -> Habit:
     
-    return await update_habit_service(id, update_data)
+    return await update_habit_service(id, current_user.id, update_data)
 
 
 
 
 @router.delete('/{id}')
 async def delete_habit_route(
-    id: Annotated[BeanieObjectId, Path()]
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    id:             Annotated[BeanieObjectId, Path()]
 ) :
 
-    return await delete_habit_service(id)
+    return await delete_habit_service(id, current_user.id)
 
 
 
@@ -141,10 +144,11 @@ async def delete_habit_route(
     response_model = Dict[str, str]
 )
 async def archive_habit_route(
-    id: Annotated[BeanieObjectId, Path()]
+    current_user:   Annotated[TokenData, Depends(get_current_user)], 
+    id:             Annotated[BeanieObjectId, Path()]
 ) -> Dict[str, str]:
     
-    return await archive_habit_service(id)
+    return await archive_habit_service(id, current_user.id)
 
 
 
