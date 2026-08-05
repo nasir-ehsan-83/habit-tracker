@@ -1,8 +1,4 @@
-from datetime import (
-    date,
-    datetime,
-    timezone
-)
+import datetime
 from beanie import (
     Document, 
     BeanieObjectId,
@@ -25,17 +21,17 @@ class Track(Document):
     habit_id:       BeanieObjectId
     note:           str | None = Field(default = None, max_length = 500)
     value:          int = Field(default = 1, ge = 0)
-    date:           date = Field(default_factory = lambda: datetime.now(timezone.utc).date())
-    timestamp:      int = Field(default_factory = lambda: int(datetime.now(timezone.utc).timestamp()))
+    date:           datetime.date = Field(default_factory = lambda: datetime.datetime.now(datetime.timezone.utc).date())
+    timestamp:      int = Field(default_factory = lambda: int(datetime.datetime.now(datetime.timezone.utc).timestamp()))
     status:         HabitStatus = Field(default =  HabitStatus.completed)
 
-    created_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
-    updated_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    created_at:     datetime.datetime = Field(default_factory = lambda: datetime.datetime.now(datetime.timezone.utc))
+    updated_at:     datetime.datetime = Field(default_factory = lambda: datetime.datetime.now(datetime.timezone.utc))
 
 
     @before_event([Replace, Update])
     async def update_timestamp(self) -> None:
-        self.updated_at = datetime.now(timezone.utc)
+        self.updated_at = datetime.datetime.now(datetime.timezone.utc)
 
 
     class Settings:
