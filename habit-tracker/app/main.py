@@ -8,9 +8,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
-from app.utils.limiter import limiter
-from app.core.cors import cors
-from app.db.database import init_db
+from app.utils import limiter
+from app.core import cors
+from app.db import init_db
 from app.routes import (
     auth, 
     habits, 
@@ -26,17 +26,13 @@ app = FastAPI(
     lifespan = lifespan
 )
 
-# setup_offline_docs(app)
-
-# add cors middleware
 app.add_middleware(
     CORSMiddleware,
     **cors
 )
 
-# add rate-limit
 app.state.limiter = limiter
-# add handler for rate-limit
+
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
     return JSONResponse(
@@ -46,7 +42,6 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         }
     )
 
-# add routes from app/routes/
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(habits.router)
