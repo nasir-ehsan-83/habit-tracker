@@ -1,4 +1,7 @@
-from typing import Any
+from typing import (
+    Any, 
+    List
+)
 from datetime import (
     date, 
     datetime
@@ -56,3 +59,11 @@ class TrackUpdate(BaseModel):
     note:       str | None = Field(default = None, max_length = 500)
     value:      int | None = Field(default = None, ge = 0)
     status:     HabitStatus | None = Field(default = None)
+
+
+
+
+
+class MissedDaysResponse(BaseModel):
+    missed_days:    List[date]
+    habit_id:       BeanieObjectId | None = None
