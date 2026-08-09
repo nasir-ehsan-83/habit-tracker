@@ -28,6 +28,7 @@ from .preferences import (
     PreferenceOut,
     PreferenceUpdate
 )
+from .streaks import StreakResponse
 
 __all__ = [
     "UserCreate",
@@ -47,5 +48,6 @@ __all__ = [
     "ResetPassword",
     "PreferenceCreate",
     "PreferenceOut",
-    "PreferenceUpdate"
+    "PreferenceUpdate",
+    "StreakResponse"
 ]
