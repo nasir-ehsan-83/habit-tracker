@@ -8,18 +8,21 @@ from fastapi import (
     HTTPException,
     status
 )
-from app.models.habits import Habit
-from app.models.users import User
-from app.utils.pagination import paginate
-from app.config.logging_handler import logger
+
+from app.utils import paginate
+from app.config import logger
+from app.models import (
+    User, 
+    Habit
+)
 
 
 
 
-async def get_all_users(
-    is_active: bool = False, 
-    page: int = 1, 
-    limit: int = 10
+async def get_all_users_service(
+    is_active:  bool = False, 
+    page:       int = 1, 
+    limit:      int = 10
 ) -> List[User]:
 
     try:
@@ -43,8 +46,8 @@ async def get_all_users(
 
 
 
-async def get_one_user(
-    user_id: BeanieObjectId
+async def get_user_service(
+    user_id:    BeanieObjectId
 ) -> User:
     
     try: 
@@ -73,8 +76,8 @@ async def get_one_user(
 
 
 
-async def block_user(
-    user_id: BeanieObjectId
+async def block_user_service(
+    user_id:    BeanieObjectId
 ) -> User:
     
     try:
@@ -104,11 +107,11 @@ async def block_user(
 
 
 
-async def get_all_habits(
-    owner_id: BeanieObjectId | None = None, 
-    category: str | None = None,
-    page: int = 1, 
-    limit: int = 10
+async def get_all_habits_service(
+    owner_id:   BeanieObjectId | None = None, 
+    category:   str | None = None,
+    page:       int = 1, 
+    limit:      int = 10
 ) -> List[Habit]:
     
     try:
