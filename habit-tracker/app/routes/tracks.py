@@ -1,6 +1,7 @@
 from datetime import date
 from typing import (
-    Annotated, 
+    Annotated,
+    Dict, 
     List
 )
 from beanie import BeanieObjectId
@@ -22,7 +23,8 @@ from app.schemas import (
     TokenData,
     TrackCreate,
     TrackOut,
-    TrackUpdate
+    TrackUpdate,
+    MissedDaysResponse
 )
 from app.services.tracks_service import(
     create_track_service,
@@ -30,6 +32,7 @@ from app.services.tracks_service import(
     update_track_service,
     get_daily_tracks_service,
     delete_track_service,
+    get_missed_days_service
 )
 
 
@@ -109,7 +112,21 @@ async def get_track_history_router(
     current_user:   Annotated[TokenData, Depends(get_current_user)],
     habit_id:       Annotated[BeanieObjectId, Query()],
     from_date:      Annotated[date, Query()],
-    to_date:    Annotated[date, Query()]
+    to_date:        Annotated[date, Query()]
 ) -> List[Track]:
     
     return await get_track_history_service(current_user.id, habit_id, from_date, to_date)
+
+
+
+
+@router.get(
+    '/missed-days', 
+    response_model = MissedDaysResponse
+)
+async def get_missed_days_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    habit_id:       Annotated[BeanieObjectId | None, Query(default = None)], 
+) -> MissedDaysResponse:
+    
+    return await get_missed_days_service(current_user.id, habit_id)

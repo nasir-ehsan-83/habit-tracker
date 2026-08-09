@@ -13,7 +13,8 @@ from fastapi import (
 
 from app.schemas import (
     TrackCreate,
-    TrackUpdate
+    TrackUpdate,
+    MissedDaysResponse
 )
 from app.config import logger
 from app.models import Track
@@ -205,6 +206,41 @@ async def get_track_history_service(
     except Exception as error:
         logger.error(f"Unexpected error in get_track_history: {error}", exc_info = True)
     
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
+
+
+
+async def get_missed_days_service(
+    owner_id: BeanieObjectId,
+    habit_id: BeanieObjectId | None
+) -> MissedDaysResponse: 
+    
+    try:
+        query = {"owner_id": owner_id}
+        response_data = {}
+
+        if habit_id:
+            query["habit_id"] = habit_id
+            response_data["habit_id"] = habit_id
+
+        tracks = await Track.find(query).to_list()
+
+        missed_days_list: List[date] = [track.date for track in tracks] 
+
+        response_data["missed_days"] = missed_days_list
+
+        return MissedDaysResponse(**response_data)
+        
+    except HTTPException:
+        raise
+    
+    except Exception as error:
+        logger.error(f"Unexpected error in get_missed_days_service: {error}", exc_info=True)
+        
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
