@@ -29,8 +29,9 @@ from .preferences import (
 )
 from .streaks import (
     CurrentStreakOut,
-    BestStreakOut
+    BestStreakOut,
 )
+from .admin import AppStatsOut
 
 __all__ = [
     "UserCreate",
@@ -48,8 +49,8 @@ __all__ = [
     "TrackUpdate",
     "VerifyEmail",
     "ResetPassword",
-    "PreferenceCreate",
     "PreferenceOut",
     "PreferenceUpdate",
-    "StreakResponse"
+    "CurrentStreakOut",
+    "BestStreakOut",
 ]
