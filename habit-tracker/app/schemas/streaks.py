@@ -18,8 +18,8 @@ class StreakResponse(BaseModel):
 
 class CurrentStreakOut(StreakResponse):
     current_streak:     int
-    start_date:         date 
-    last_tracked:       date 
+    start_date:         date | None = None
+    last_tracked:       date | None = None
 
 
 

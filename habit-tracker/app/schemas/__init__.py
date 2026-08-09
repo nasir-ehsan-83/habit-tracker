@@ -24,11 +24,13 @@ from .validator import (
     ResetPassword
 )
 from .preferences import (
-    PreferenceCreate,
     PreferenceOut,
     PreferenceUpdate
 )
-from .streaks import StreakResponse
+from .streaks import (
+    CurrentStreakOut,
+    BestStreakOut
+)
 
 __all__ = [
     "UserCreate",
