@@ -16,13 +16,15 @@ from app.dependencies import (
 )
 from app.schemas import (
     UserAdminOut, 
-    HabitAdminOut
+    HabitAdminOut,
+    AppStatsOut
 )
 from app.services.admin_service import (
     block_user_service,
     get_all_habits_service, 
     get_all_users_service, 
-    get_user_service
+    get_user_service,
+    get_app_stats_service
 )
 from app.models import (
     User,
@@ -99,3 +101,15 @@ async def get_all_habits_route(
 ) -> List[Habit]: 
 
     return await get_all_habits_service(owner_id, category, page, limit)
+
+
+
+
+
+@router.get(
+    '/stats',
+    response_model = AppStatsOut
+)
+async def get_app_stats_route() -> AppStatsOut:
+
+    return await get_app_stats_service()

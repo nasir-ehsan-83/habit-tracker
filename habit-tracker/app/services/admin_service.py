@@ -13,8 +13,10 @@ from app.utils import paginate
 from app.config import logger
 from app.models import (
     User, 
-    Habit
+    Habit,
+    Streak
 )
+from app.schemas import AppStatsOut
 
 
 
@@ -36,7 +38,7 @@ async def get_all_users_service(
         return await User.find(query).skip(skip).limit(limit_val).to_list()
     
     except Exception as exc:
-        logger.error(f"Unexpected error in get_all_users: {exc}", exc_info = True)
+        logger.error(f"Unexpected error in get_all_users_service: {exc}", exc_info = True)
     
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -66,7 +68,7 @@ async def get_user_service(
         raise
     
     except Exception as exc:
-        logger.error(f"Unexpected error in get_one_user: {exc}", exc_info = True)
+        logger.error(f"Unexpected error in get_user_service: {exc}", exc_info = True)
 
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -97,7 +99,7 @@ async def block_user_service(
         raise
         
     except Exception as exc:
-        logger.error(f"Unexpected error in block_user: {exc}", exc_info = True)
+        logger.error(f"Unexpected error in block_user_service: {exc}", exc_info = True)
 
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -127,10 +129,47 @@ async def get_all_habits_service(
 
         return await Habit.find(query).skip(skip).limit(limit_val).sort("+created_at").to_list()
     
+    except HTTPException:
+        raise
+        
     except Exception as error:
-        logger.error(f"Unexpected error in get_all_habits: {error}", exc_info = True)
+        logger.error(f"Unexpected error in get_all_habits_service: {error}", exc_info = True)
         
         raise HTTPException(
             status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail = "Internal server error"
         )
+
+
+
+
+async def get_app_stats_service() -> AppStatsOut:
+
+    try:
+
+        total_users = await User.count()
+
+        active_users = await User.find(User.status == "active" ).count()
+
+        total_habits = await Habit.count()
+
+        total_streaks = await Streak.count()
+
+        return AppStatsOut(
+            total_users = total_users,
+            active_users = active_users,
+            total_habits = total_habits,
+            total_streaks = total_streaks
+        )
+    
+    except HTTPException:
+        raise
+        
+    except Exception as exc:
+        logger.error(f"Unexpected error in get_app_stats_service: {exc}", exc_info = True)
+
+        raise HTTPException(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail = "Internal server error"
+        )
+    
