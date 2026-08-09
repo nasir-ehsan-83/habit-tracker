@@ -12,10 +12,12 @@ from app.dependencies import (
 )
 from app.schemas import (
     TokenData,
-    CurrentStreakOut
+    CurrentStreakOut,
+    BestStreakOut
 )
 from app.services.streaks_service import (
-    get_current_streak_service
+    get_current_streak_service,
+    get_best_streak_service
 )
 
 
@@ -43,3 +45,17 @@ async def get_current_streak_route(
     
     return await get_current_streak_service(current_user.id, habit_id)
 
+
+
+
+
+@router.get(
+    '/best',
+    response_model = BestStreakOut
+)
+async def get_best_streak_route(
+    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    habit_id:       Annotated[BeanieObjectId, Query()]
+) -> BestStreakOut:
+    
+    return await get_best_streak_service(current_user.id, habit_id)
