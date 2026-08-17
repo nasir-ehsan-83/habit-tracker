@@ -14,8 +14,11 @@ from datetime import (
     datetime,
     timezone
 )
-from app.models.habits import Habit
-from app.schemas.habits import (
+from app.models import (
+    Habit,
+    Streak
+)
+from app.schemas import (
     HabitCreate, 
     HabitUpdate
 )
@@ -43,18 +46,21 @@ async def create_habit_service(
                 detail = "Habit already exists"
             )
         
-        if found_habit:
-            raise HTTPException(
-                status_code = status.HTTP_400_BAD_REQUEST,
-                detail = "Habit already exists"
-            )
-        
         new_habit: Habit = Habit(
             **habit_in.model_dump(),
             owner_id = owner_id
         )
 
-        return await new_habit.insert() # type: ignore
+        await new_habit.insert() # type: ignore
+
+        new_streak: Streak = Streak(
+            owner_id = owner_id,
+            habit_id = BeanieObjectId(new_habit.id )
+        )
+
+        await new_streak.insert() # type: ignore
+
+        return new_habit
 
     except HTTPException:
         raise
