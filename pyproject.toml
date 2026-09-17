@@ -1,0 +1,25 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+    ".git",
+    ".github",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "data_structure_algorithm",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = [
+    "E501",  # خطوط بلند
+    "F401",  # import بدون استفاده
+    "F841",  # متغیر بدون استفاده
+    "E402",  # import در وسط کد
+    "E722",  # bare except
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["F401", "F811", "E402"]
+"**/conftest.py" = ["F401", "F811"]

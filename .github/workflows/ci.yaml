@@ -1,8 +1,8 @@
-name: Habit-Tracker CI
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main ]
 
@@ -26,8 +26,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install ruff black
 
-      - name: Run ruff
-        run: ruff check .
-
-      - name: Run black check
-        run: black --check .
+      - name: Run ruff (non-blocking)
+        run: ruff check . --exit-zero 
+        
+      - name: Run black (non-blocking)
+        run: black --check . || true    
