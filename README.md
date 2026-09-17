@@ -1,49 +1,49 @@
-# 🌐 Habit Tracker Service & Algorithm Lab
+# 🌐 Habit Tracker Service
 
-A professional-grade backend ecosystem built with **FastAPI** and **MongoDB**, featuring a production-ready **Habit Tracking API** integrated with a high-performance **CS Fundamentals Lab**. This project showcases asynchronous architecture, clean code principles, and comprehensive system monitoring.
+A professional-grade backend for tracking daily habits, built with **FastAPI**, **MongoDB**, and **Redis**. This project showcases asynchronous architecture, clean code principles, JWT authentication, and comprehensive system monitoring.
 
 ## 📑 Table of Contents
-- [Project Overview](#-project-overview)
-- [System Architecture](#-system-architecture)
-- [CS Fundamentals Lab](#-cs-fundamentals-lab)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Monitoring & Logs](#-monitoring--logs)
-- [Testing](#-testing)
-- [Author & Support](#-author--support)
+
+* [Project Overview](#-project-overview)
+* [Tech Stack](#-tech-stack)
+* [Project Structure](#-project-structure)
+* [Getting Started](#-getting-started)
+* [Monitoring & Logs](#-monitoring--logs)
+* [Testing](#-testing)
+* [CI/CD](#-cicd)
+* [Author & Support](#-author--support)
 
 ## 📊 Project Overview
 
-The **Habit Tracker** is a modular backend application designed for high-concurrency environments. It manages daily habits with an emphasis on data integrity and security.
+**Habit Tracker** is a modular backend application designed for high-concurrency environments. It manages daily habits with an emphasis on data integrity, security, and performance.
 
 ### Key Features:
+
 * 🔐 **Advanced Auth:** JWT Authentication with strict Access/Refresh token rotation and expiration management.
 * 🛡️ **RBAC:** Multi-level access control (Standard User / Admin).
 * ⚡ **Performance:** Fully asynchronous I/O powered by FastAPI and Motor.
+* 🚀 **Caching & Sessions:** Redis-backed caching and rate-limiting storage for high-throughput scenarios.
 * 🚏 **Security:** Integrated Rate Limiting (SlowAPI) to mitigate brute-force and DoS risks.
 * 📄 **Pagination:** Robust logic for handling large datasets via skip/limit filters.
 * 🗄️ **Schema Integrity:** Type-safe modeling using Beanie ODM and Pydantic v2.
+* ✅ **Automated Testing:** Full test suite with isolated MongoDB and Redis services.
 
-## 📘 CS Fundamentals Lab
-
-A dedicated library of high-performance implementations of core computer science concepts, optimized for educational and practical use.
-
-* **Algorithms:** Production-grade implementations of Quick Sort, Merge Sort, and Binary Search with focus on \(O(n \log n)\) efficiency.
-* **Data Structures:** Custom-built Stacks, Queues, Linked Lists, and Tree Traversal algorithms designed for minimal memory overhead.
+> 📘 **Note:** The CS Fundamentals Lab (algorithms & data structures) previously included in this repository has been moved to a separate repository to keep each project focused and independently maintainable.
 
 ## 🛠 Tech Stack
 
 * **Framework:** Python 3.12+, FastAPI, Beanie-ODM, Pydantic v2
 * **Database:** MongoDB 7.0+
+* **Cache / Session Store:** Redis 7.2+
 * **Infrastructure:** Docker, Docker Compose
 * **Security:** JWT (python-jose), Bcrypt (passlib), SlowAPI
 * **Logging:** Structured Rotating File Logging
+* **CI/CD:** GitHub Actions (Lint, Test)
 
 ## 📁 Project Structure
 
-```text
-habit-tracker-service/
+````text
+habit-tracker/
 ├── app/                        # FastAPI Application
 │   ├── config/                 # Settings & Logging Setup
 │   ├── core/                   # Security & JWT Logic
@@ -55,60 +55,83 @@ habit-tracker-service/
 │   ├── services/               # Core Business Logic
 │   ├── utils/                  # Enums, Limiters & Pagination
 │   └── main.py                 # App Entry Point
-├── data_structure_algorithm/   # CS Fundamentals Module
 ├── logs/                       # Rotating Log Files (Generated)
 ├── tests/                      # Automated Test Suite
+├── .github/workflows/          # CI/CD Pipelines
 ├── Dockerfile                  # API Containerization
 ├── docker-compose.yaml         # Multi-container Orchestration
+├── pyproject.toml              # Ruff / Black Configuration
 └── run.py                      # Custom Execution Script
-```
 
-## 🚀 Getting Started
+🚀 Getting Started
 
 ### Installation
-1. **Clone & Enter:**
-   ```bash
-   git clone https://github.com
-   cd habit-tracker-service
-   ```
 
-2. **Run with Docker (Recommended):**
-   ```bash
-   docker-compose up --build
-   ```
+**Clone & Enter:**
 
-3. **Manual Setup:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   python run.py
-   ```
+```bash
+git clone https://github.com/nasir-ehsan-83/habit-tracker.git
+cd habit-tracker
+````
+
+**Run with Docker (Recommended):**
+
+```bash
+docker-compose up --build
+```
+
+**Manual Setup:**
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python run.py
+```
 
 ## 📝 Monitoring & Logs
 
-The system features a **Professional Logging Engine** located in the `/logs` directory (outside the app core for security). It automatically rotates files when they reach 5MB.
+The system features a Professional Logging Engine located in the `/logs` directory (outside the app core for security). It automatically rotates files when they reach 5MB.
 
-*   `security_audit.log`: Tracks login attempts and token expirations (Warning level).
-*   `errors.log`: Captures system exceptions and database failures (Error level).
-*   `critical.log`: High-priority infrastructure alerts.
+* `security_audit.log`: Tracks login attempts and token expirations (Warning level).
+* `errors.log`: Captures system exceptions and database failures (Error level).
+* `critical.log`: High-priority infrastructure alerts.
 
 ## 🧪 Testing
-We maintain high reliability through rigorous unit testing.
+
+We maintain high reliability through rigorous unit testing. Tests run against isolated MongoDB and Redis instances.
 
 ```bash
 # Run all tests
 pytest
 
+# Run with coverage
+pytest --cov=. --cov-report=term
+
 # Test specific module
-pytest data_structure_algorithm/tests/test_sorting.py
+pytest tests/api/test_auth.py
 ```
 
+## 🚀 CI/CD
+
+This project uses GitHub Actions for continuous integration:
+
+* ✅ **Lint:** ruff + black (non-blocking for WIP code)
+* 🧪 **Test:** pytest with MongoDB & Redis service containers
+* 📊 **Coverage:** (coming soon)
+
+See `.github/workflows/ci.yaml` for details.
+
 ## 👨‍💻 Author
+
 **Nasir Ahmad Ehsan**
-* Backend Engineer & AI Enthusiast
-* Specialized in FastAPI, Rust, and Scalable Systems.
-* GitHub: [@nasir-ehsan-83](https://github.com)
+
+Backend Engineer & AI Enthusiast
+
+Specialized in FastAPI, Rust, and Scalable Systems.
+
+GitHub: @nasir-ehsan-83
 
 ## ⭐ Support
+
 If this architecture helped your workflow, please consider giving it a ⭐ on GitHub!
