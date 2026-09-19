@@ -20,30 +20,47 @@ from app.utils.enum import (
 
 
 class User(Document):
+    """User account model for authentication and profile."""
 
     name:           str
+    """Full name of the user."""
+
     username:       str
-    email:          EmailStr  
+    """Unique username for login."""
+
+    email:          EmailStr
+    """Unique email address for login and notifications."""
+
     password:       str
+    """Hashed password (bcrypt)."""
 
     avatar:         str | None = None
+    """Optional profile picture URL."""
+
     role:           str = UserRole.user
+    """User role: user or admin."""
+
     status:         UserStatus = UserStatus.active
-    
+    """Account status: active, inactive, blocked."""
+
     created_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    """Account creation timestamp."""
+
     updated_at:     datetime = Field(default_factory = lambda: datetime.now(timezone.utc))
+    """Last profile update timestamp."""
 
     class Settings:
-    
+        """MongoDB collection configuration."""
+
         name = "users"
 
         indexes = [
             IndexModel(
-                [("email", ASCENDING)], 
+                [("email", ASCENDING)],
                 unique = True
             ),
             IndexModel(
-                [("username", ASCENDING)], 
+                [("username", ASCENDING)],
                 unique = True
             ),
         ]
