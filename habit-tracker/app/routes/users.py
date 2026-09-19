@@ -9,7 +9,6 @@ from fastapi import (
     Depends,
 )
 
-from app.utils import limiter
 from app.dependencies import (
     get_current_user,
     required_role

@@ -1,7 +1,6 @@
 from datetime import date
 from typing import (
     Annotated,
-    Dict, 
     List
 )
 from beanie import BeanieObjectId
