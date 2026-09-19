@@ -1,0 +1,40 @@
+site_name: Habit Tracker Documentation
+site_description: Complete architecture and API documentation for FastAPI + Beanie Habit Tracker.
+site_author: Nasir Ehsan
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: purple
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+nav:
+  - Introduction: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Configuration (.env): getting-started/configuration.md
+  - Architecture & Layers:
+      - Database & Storage: architecture/database.md
+      - Document Models (Beanie): architecture/models.md
+      - Services Layer (Logic): architecture/services.md
+  - API Reference:
+      - Authentication: api-reference/auth.md
+      - Habits Management: api-reference/habits.md
+      - Analytics & Streaks: api-reference/analytics.md
