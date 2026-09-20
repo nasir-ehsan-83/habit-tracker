@@ -8,7 +8,8 @@ from app.config import (
 from app.models import (
     User,
     Habit,
-    Track
+    Track,
+    UserPreference
 )
 
 
@@ -26,7 +27,7 @@ async def init_db():
 
         await init_beanie(
             database = client[settings.DATABASE_NAME],  # type: ignore
-            document_models = [User, Habit, Track]
+            document_models = [User, Habit, Track, UserPreference]
         )
 
         logger.info("Database initialized successfully")
