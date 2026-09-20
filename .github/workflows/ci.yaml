@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -46,7 +46,6 @@ jobs:
         env:
           MONGO_INITDB_ROOT_USERNAME: ${{ vars.MONGO_USERNAME }}
           MONGO_INITDB_ROOT_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
-          MONGO_INITDB_DATABASE: habit_tracker_test
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.runCommand(\"ping\").ok' || exit 1"
           --health-interval 10s
@@ -82,6 +81,6 @@ jobs:
 
       - name: Run tests
         env:
-          MONGO_URI: mongodb://${{ vars.MONGO_USERNAME }}:${{ secrets.MONGO_PASSWORD }}@localhost:27017/habit_tracker_test?authSource=admin
+          MONGO_URI: mongodb://${{ vars.MONGO_USERNAME }}:${{ secrets.MONGO_PASSWORD }}@localhost:27017/${{ vars.DATABASE_NAME_TEST }}?authSource=admin
           REDIS_URL: redis://localhost:6379/0
         run: pytest -v
