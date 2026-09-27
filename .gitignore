@@ -55,4 +55,6 @@ Thumbs.db
 dist/
 build/
 *.spec
-*.whl
+*.whl.ruff_cache/
+__pycache__/
+*.py[cod]
