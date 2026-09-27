@@ -1,25 +1,41 @@
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
+
 exclude = [
     ".git",
     ".github",
-    "__pycache__",
     ".venv",
     "venv",
-    "data_structure_algorithm",
+    "__pycache__",
+    "logs",
+    "docs",
+    "build",
+    "dist",
+    ".ruff_cache",
+    ".pytest_cache",
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF"]
+
 ignore = [
-    "E501",  # خطوط بلند
-    "F401",  # import بدون استفاده
-    "F841",  # متغیر بدون استفاده
-    "E402",  # import در وسط کد
-    "E722",  # bare except
+    "E501",   # خط بلند — ruff format مدیریت می‌کنه
+    "E402",   # import بعد از کد — FastAPI معمولاً این‌طوری می‌نویسه
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["F401", "F811", "E402"]
 "**/conftest.py" = ["F401", "F811"]
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
