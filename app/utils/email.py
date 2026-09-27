@@ -1,17 +1,12 @@
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 import aiosmtplib
 
-from app.config import (
-    logger,
-    settings
-)
+from app.config import logger, settings
 
 
-async def send_email(
-    email: str,
-    verify_code: int
-) -> None:
+async def send_email(email: str, verify_code: int) -> None:
     """Send verification email with HTML template.
 
     Args:
@@ -23,7 +18,6 @@ async def send_email(
         - ERROR: On SMTP authentication failure or other errors.
     """
     try:
-
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
             logger.error("SMTP credentials are not set")
             return
@@ -116,27 +110,27 @@ async def send_email(
         </body>
         </html>
         """
-        
+
         message.attach(MIMEText(html_body, "html"))
 
         await aiosmtplib.send(
             message,
-            hostname = settings.SMTP_HOST,
-            port = settings.SMTP_PORT,
-            username = settings.SMTP_USER,
-            password = settings.SMTP_PASSWORD,
-            start_tls = True,
-            timeout = 30,
-            use_tls = False
+            hostname=settings.SMTP_HOST,
+            port=settings.SMTP_PORT,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            start_tls=True,
+            timeout=30,
+            use_tls=False,
         )
-        
+
         logger.info(f"Verification email sent successfully to {email}")
 
     except aiosmtplib.SMTPAuthenticationError:
         logger.error("SMTP authentication failed. Check username/password.")
-    
+
     except aiosmtplib.SMTPException as smtp_error:
         logger.error(f"SMTP error: {smtp_error}")
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in send_email: {error}", exc_info = True)
+        logger.error(f"Unexpected error in send_email: {error}", exc_info=True)

@@ -1,63 +1,37 @@
-from typing import (
-    Annotated, 
-    List, 
-    Tuple
-)
+from typing import Annotated, List, Tuple
+
 from fastapi import (
     APIRouter,
-    Body, 
+    Body,
     Depends,
 )
 
-from app.dependencies import (
-    get_current_user,
-    required_role
-)
-from app.models import (
-    User, 
-    Habit,
-    UserPreference
-)
-from app.schemas import (
-    UserPrivateOut,
-    UserUpdate,
-    TokenData,
-    PreferenceOut,
-    PreferenceUpdate
-)
+from app.dependencies import get_current_user, required_role
+from app.models import Habit, User, UserPreference
+from app.schemas import PreferenceOut, PreferenceUpdate, TokenData, UserPrivateOut, UserUpdate
 from app.services.users_service import (
-    get_user_service,
-    update_avatar_service, 
-    update_user_service,
-    get_stats_service,
     get_preference_service,
-    update_preference_service
+    get_stats_service,
+    get_user_service,
+    update_avatar_service,
+    update_preference_service,
+    update_user_service,
 )
-
-
-
 
 router = APIRouter(
-    prefix = '/api/users',
-    tags = ['User'],
-    dependencies = [
-        Depends(required_role(["ADMIN", "USER"]))
-    ]
+    prefix="/api/users", tags=["User"], dependencies=[Depends(required_role(["ADMIN", "USER"]))]
 )
-
-
 
 
 @router.get(
-    '/me', 
-    response_model = UserPrivateOut,
-    summary = "Retrieve current user profile",
-    description = "Fetches the complete profile information of the currently authenticated user."
+    "/me",
+    response_model=UserPrivateOut,
+    summary="Retrieve current user profile",
+    description="Fetches the complete profile information of the currently authenticated user.",
 )
 async def get_user_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> User:
-
     """Retrieves the complete profile of the authenticated user.
 
     This endpoint returns all private user information including email,
@@ -84,19 +58,18 @@ async def get_user_route(
     return await get_user_service(current_user.id)
 
 
-
-
 @router.patch(
-    '/me', 
-    response_model = UserPrivateOut,
-    summary = "Update current user profile",
-    description = "Updates the profile information of the currently authenticated user."
+    "/me",
+    response_model=UserPrivateOut,
+    summary="Update current user profile",
+    description="Updates the profile information of the currently authenticated user.",
 )
 async def update_user_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    user_data:      Annotated[UserUpdate, Body(description = "Updated user profile fields (all fields optional).")]
-) -> User :
-
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    user_data: Annotated[
+        UserUpdate, Body(description="Updated user profile fields (all fields optional).")
+    ],
+) -> User:
     """Updates the authenticated user's profile information.
 
     This endpoint allows users to update their profile details such as
@@ -126,18 +99,16 @@ async def update_user_route(
     return await update_user_service(current_user.id, user_data)
 
 
-
 @router.patch(
-    '/me/avatar',
-    response_model = UserPrivateOut,
-    summary = "Update user avatar",
-    description = "Updates the avatar URL for the currently authenticated user's profile picture."
+    "/me/avatar",
+    response_model=UserPrivateOut,
+    summary="Update user avatar",
+    description="Updates the avatar URL for the currently authenticated user's profile picture.",
 )
 async def update_user_avatar_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    new_url:        str = Body(..., description = "The new URL for the user's avatar image.", embed = True)
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    new_url: str = Body(..., description="The new URL for the user's avatar image.", embed=True),
 ) -> User:
-    
     """Updates the user's avatar/profile picture URL.
 
     This endpoint allows users to change their profile picture by providing
@@ -167,18 +138,15 @@ async def update_user_avatar_route(
     return await update_avatar_service(current_user.id, new_url)
 
 
-
-
 @router.get(
-    '/me/stats',
-    response_model = Tuple[User, List[Habit]],
-    summary = "Retrieve user statistics",
-    description = "Fetches comprehensive statistics including user details and their habit data."
+    "/me/stats",
+    response_model=Tuple[User, List[Habit]],
+    summary="Retrieve user statistics",
+    description="Fetches comprehensive statistics including user details and their habit data.",
 )
 async def get_user_stats_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> Tuple[User, List[Habit]]:
-    
     """Retrieves comprehensive user statistics and habit data.
 
     This endpoint returns both user information and all associated habits,
@@ -205,21 +173,18 @@ async def get_user_stats_route(
     return await get_stats_service(current_user.id)
 
 
-
-
 @router.get(
-    '/preference',
-    response_model = PreferenceOut,
-    summary = "Retrieve user preferences",
-    description = "Fetches the current user's preferences and settings."
+    "/preference",
+    response_model=PreferenceOut,
+    summary="Retrieve user preferences",
+    description="Fetches the current user's preferences and settings.",
 )
 async def get_user_preference_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> UserPreference:
-
     """Retrieves the user's current preferences and settings.
 
-    This endpoint returns all user preferences including  theme preferences, 
+    This endpoint returns all user preferences including  theme preferences,
     and application configurations.
 
     **Response Codes:**
@@ -244,19 +209,18 @@ async def get_user_preference_route(
     return await get_preference_service(current_user.id)
 
 
-
-
 @router.put(
-    '/preference',
-    response_model = PreferenceOut,
-    summary = "Create or update user preferences",
-    description = "Creates or updates the user's preferences and settings. If preferences don't exist, they will be created."
+    "/preference",
+    response_model=PreferenceOut,
+    summary="Create or update user preferences",
+    description="Creates or updates the user's preferences and settings. If preferences don't exist, they will be created.",
 )
 async def create_or_update_user_preference_route(
-    current_user:       Annotated[TokenData, Depends(get_current_user)],
-    preference_data:    Annotated[PreferenceUpdate, Body(description = "Updated preference settings (all fields optional).")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    preference_data: Annotated[
+        PreferenceUpdate, Body(description="Updated preference settings (all fields optional).")
+    ],
 ) -> UserPreference:
-
     """Creates or updates the user's preferences.
 
     This endpoint allows users to customize their application experience

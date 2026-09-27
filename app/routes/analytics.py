@@ -1,53 +1,47 @@
-from typing import Annotated
 from datetime import date
+from typing import Annotated
+
 from beanie import BeanieObjectId
-from fastapi import (
-    APIRouter, 
-    Depends, 
-    Query
-)
+from fastapi import APIRouter, Depends, Query
 
 from app.dependencies import get_current_user
-from app.utils.enum import Timeframe
 from app.schemas import (
-    HeatmapOut, 
-    ProgressChartOut,
     DashboardOut,
     DistributionOut,
-    ExportOut, 
-    InsightsOut
+    ExportOut,
+    HeatmapOut,
+    InsightsOut,
+    ProgressChartOut,
 )
 from app.services.analytics_service import (
+    export_data_service,
     get_dashboard_service,
     get_distribution_service,
-    export_data_service,
     get_heatmap_service,
+    get_insights_service,
     get_progress_chart_service,
-    get_insights_service
 )
-
-
-
+from app.utils.enum import Timeframe
 
 router: APIRouter = APIRouter(
-    prefix = '/api/analytics',
-    tags = ["Analytics"],
-    dependencies = [
-        Depends(get_current_user)
-    ]
+    prefix="/api/analytics", tags=["Analytics"], dependencies=[Depends(get_current_user)]
 )
 
 
 @router.get(
-    '/dashboard',
-    response_model = DashboardOut,
-    summary = "Retrieve dashboard analytics",
-    description = "Fetches comprehensive dashboard analytics including key metrics, recent activities, and habits stats overview for the authenticated user."
+    "/dashboard",
+    response_model=DashboardOut,
+    summary="Retrieve dashboard analytics",
+    description="Fetches comprehensive dashboard analytics including key metrics, recent activities, and habits stats overview for the authenticated user.",
 )
 async def get_dashboard_route(
-    timeframe:      Annotated[Timeframe | None, Query(description = "Time period for analytics aggregation (e.g., DAY, WEEK, MONTH, YEAR). If not provided, uses default timeframe.")] = None
+    timeframe: Annotated[
+        Timeframe | None,
+        Query(
+            description="Time period for analytics aggregation (e.g., DAY, WEEK, MONTH, YEAR). If not provided, uses default timeframe."
+        ),
+    ] = None,
 ) -> DashboardOut:
-    
     """Retrieves comprehensive dashboard analytics for the authenticated user.
 
     This endpoint aggregates key metrics and provides an overview of the user's
@@ -72,19 +66,25 @@ async def get_dashboard_route(
     return await get_dashboard_service(timeframe)
 
 
-
-
 @router.get(
-    '/heatmap',
-    response_model = HeatmapOut,
-    summary = "Retrieve habit heatmap data",
-    description = "Fetches heatmap data for habit completions over time, showing daily activity for the specified year and month."
+    "/heatmap",
+    response_model=HeatmapOut,
+    summary="Retrieve habit heatmap data",
+    description="Fetches heatmap data for habit completions over time, showing daily activity for the specified year and month.",
 )
 async def get_heatmap_route(
-    year:       Annotated[int, Query(ge = 2020, le = 2100, description = "Year for the heatmap data (2020-2100).")],
-    month:      Annotated[int | None, Query(ge = 1, le = 12, description = "Month for the heatmap data (1-12). If not provided, returns data for the entire year.")] = None
+    year: Annotated[
+        int, Query(ge=2020, le=2100, description="Year for the heatmap data (2020-2100).")
+    ],
+    month: Annotated[
+        int | None,
+        Query(
+            ge=1,
+            le=12,
+            description="Month for the heatmap data (1-12). If not provided, returns data for the entire year.",
+        ),
+    ] = None,
 ) -> HeatmapOut:
-    
     """Retrieves heatmap data showing habit completion over time.
 
     This endpoint provides visual representation of user's habit completion
@@ -101,7 +101,7 @@ async def get_heatmap_route(
 
     Returns:
         HeatmapOut: Heatmap data containing: heatmap, year and month
-        
+
     Raises:
         HTTPException 401: If user is not authenticated.
         HTTPException 500: If an internal server error occurs.
@@ -110,19 +110,25 @@ async def get_heatmap_route(
     return await get_heatmap_service(year, month)
 
 
-
-
 @router.get(
-    '/progress-chart',
-    response_model = ProgressChartOut,
-    summary = "Retrieve habit progress chart",
-    description = "Fetches progress chart data for a specific habit, showing completion trends over the specified period."
+    "/progress-chart",
+    response_model=ProgressChartOut,
+    summary="Retrieve habit progress chart",
+    description="Fetches progress chart data for a specific habit, showing completion trends over the specified period.",
 )
 async def get_progress_chart_route(
-    habit_id:   Annotated[BeanieObjectId, Query(description = "The unique MongoDB ObjectId of the habit to analyze.")],
-    period:     Annotated[int, Query(ge = 1, le = 365, description = "Number of days to include in the progress chart (1-365). Defaults to 90.")] = 90
+    habit_id: Annotated[
+        BeanieObjectId, Query(description="The unique MongoDB ObjectId of the habit to analyze.")
+    ],
+    period: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=365,
+            description="Number of days to include in the progress chart (1-365). Defaults to 90.",
+        ),
+    ] = 90,
 ) -> ProgressChartOut:
-    
     """Retrieves progress chart data for a specific habit over time.
 
     This endpoint provides trend analysis for a habit, showing completion
@@ -150,18 +156,17 @@ async def get_progress_chart_route(
     return await get_progress_chart_service(habit_id, period)
 
 
-
-
 @router.get(
-    '/distribution',
-    response_model = DistributionOut,
-    summary = "Retrieve habit distribution",
-    description = "Fetches distribution analytics for a specific habit, showing patterns across different categories, times, or completion statuses."
+    "/distribution",
+    response_model=DistributionOut,
+    summary="Retrieve habit distribution",
+    description="Fetches distribution analytics for a specific habit, showing patterns across different categories, times, or completion statuses.",
 )
 async def get_distribution_route(
-    habit_id:   Annotated[BeanieObjectId, Query(description = "The unique MongoDB ObjectId of the habit to analyze.")]
+    habit_id: Annotated[
+        BeanieObjectId, Query(description="The unique MongoDB ObjectId of the habit to analyze.")
+    ],
 ) -> DistributionOut:
-    
     """Retrieves distribution analytics for a specific habit.
 
     This endpoint provides insights into how habit completions are distributed
@@ -187,16 +192,13 @@ async def get_distribution_route(
     return await get_distribution_service(habit_id)
 
 
-
-
 @router.get(
-    '/insights',
-    response_model = InsightsOut,
-    summary = "Retrieve user insights",
-    description = "Fetches personalized insights and recommendations based on the user's habit tracking patterns and performance."
+    "/insights",
+    response_model=InsightsOut,
+    summary="Retrieve user insights",
+    description="Fetches personalized insights and recommendations based on the user's habit tracking patterns and performance.",
 )
 async def get_insights_route() -> InsightsOut:
-    
     """Retrieves personalized insights and recommendations for the user.
 
     This endpoint analyzes the user's habit tracking data to provide
@@ -219,20 +221,29 @@ async def get_insights_route() -> InsightsOut:
     return await get_insights_service()
 
 
-
-
 @router.get(
-    '/export',
-    response_model = ExportOut,
-    summary = "Export habit data",
-    description = "Exports user's habit tracking data in JSON or CSV format, with optional date range filtering for the specified period."
+    "/export",
+    response_model=ExportOut,
+    summary="Export habit data",
+    description="Exports user's habit tracking data in JSON or CSV format, with optional date range filtering for the specified period.",
 )
 async def export_data_route(
-    format:         Annotated[str, Query(pattern = "^(json|csv)$", description = "Export format: 'json' or 'csv'.")] = "json",
-    from_date:      Annotated[date | None, Query(description = "Start date for data export. If not provided, exports from the beginning.")] = None,
-    to_date:        Annotated[date | None, Query(description = "End date for data export. If not provided, exports to the current date.")] = None
+    format: Annotated[
+        str, Query(pattern="^(json|csv)$", description="Export format: 'json' or 'csv'.")
+    ] = "json",
+    from_date: Annotated[
+        date | None,
+        Query(
+            description="Start date for data export. If not provided, exports from the beginning."
+        ),
+    ] = None,
+    to_date: Annotated[
+        date | None,
+        Query(
+            description="End date for data export. If not provided, exports to the current date."
+        ),
+    ] = None,
 ) -> ExportOut:
-    
     """Exports the user's habit tracking data in the specified format.
 
     This endpoint allows users to download their habit data for backup,

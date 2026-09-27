@@ -1,45 +1,25 @@
-from typing import (
-    Any, 
-    Dict, 
-    List
-)
-from fastapi import (
-    HTTPException, 
-    Response, 
-    status
-)
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+
 from beanie import BeanieObjectId
+from fastapi import HTTPException, Response, status
 from pymongo.errors import DuplicateKeyError
-from datetime import (
-    datetime,
-    timezone
-)
-from app.models import (
-    Habit,
-    Streak
-)
-from app.schemas import (
-    HabitCreate, 
-    HabitUpdate
-)
+
 from app.config import logger
-from app.utils.enum import HabitCategory
+from app.models import Habit, Streak
+from app.schemas import HabitCreate, HabitUpdate
 from app.utils import paginate
+from app.utils.enum import HabitCategory
 
 
-
-async def create_habit_service(
-    habit_in:   HabitCreate, 
-    owner_id:   BeanieObjectId
-) -> Habit:
-    
+async def create_habit_service(habit_in: HabitCreate, owner_id: BeanieObjectId) -> Habit:
     """Creates a new habit for the authenticated user.
 
     This service creates a new habit with the provided details and also
     initializes a streak record for tracking habit consistency.
 
     Args:
-        habit_in: Habit creation data 
+        habit_in: Habit creation data
 
     Returns:
         Habit: The created habit object with all fields populated.
@@ -49,67 +29,53 @@ async def create_habit_service(
         HTTPException 409: If a duplicate key conflict occurs.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        
         found_habit: Habit | None = await Habit.find_one(
-            Habit.name == habit_in.name,
-            Habit.owner_id == owner_id,
-            Habit.status != "deleted"
+            Habit.name == habit_in.name, Habit.owner_id == owner_id, Habit.status != "deleted"
         )
-        
+
         if found_habit:
             raise HTTPException(
-                status_code = status.HTTP_400_BAD_REQUEST,
-                detail = "Habit already exists"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Habit already exists"
             )
-        
-        new_habit: Habit = Habit(
-            **habit_in.model_dump(),
-            owner_id = owner_id
-        )
 
-        await new_habit.insert() # type: ignore
+        new_habit: Habit = Habit(**habit_in.model_dump(), owner_id=owner_id)
 
-        new_streak: Streak = Streak(
-            owner_id = owner_id,
-            habit_id = BeanieObjectId(new_habit.id )
-        )
+        await new_habit.insert()  # type: ignore
 
-        await new_streak.insert() # type: ignore
+        new_streak: Streak = Streak(owner_id=owner_id, habit_id=BeanieObjectId(new_habit.id))
+
+        await new_streak.insert()  # type: ignore
 
         return new_habit
 
     except HTTPException:
         raise
-    
+
     except DuplicateKeyError as error:
-        logger.error(f"Duplicate Key Error while creating habit: {error}", exc_info = True)
-       
+        logger.error(f"Duplicate Key Error while creating habit: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_409_CONFLICT,
-            detail = "Conflict: A habit with this name already exists for this user."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Conflict: A habit with this name already exists for this user.",
         )
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in create_habit_service: {error}", exc_info = True)
-       
+        logger.error(f"Unexpected error in create_habit_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
-
-
 
 
 async def get_all_habits_service(
-    owner_id:   BeanieObjectId, 
-    category:   HabitCategory | str = "",
-    completed:  bool = False,
-    page:       int = 1, 
-    limit:      int = 10
+    owner_id: BeanieObjectId,
+    category: HabitCategory | str = "",
+    completed: bool = False,
+    page: int = 1,
+    limit: int = 10,
 ) -> List[Habit]:
-    
     """Retrieves all habits for a user with optional filtering.
 
     This service returns a paginated list of a user's habits with support
@@ -127,41 +93,29 @@ async def get_all_habits_service(
             sorted by creation date ascending.
 
     Raises:
-        HTTPException 500: If an internal server error occurs during 
+        HTTPException 500: If an internal server error occurs during
             database operations.
     """
-    
+
     try:
-        
         skip, limit_val = paginate(page, limit)
 
-        query: Dict[str, Any] = {
-            "owner_d": owner_id,
-            "status": "deleted",
-            "category": category
-        }
+        query: Dict[str, Any] = {"owner_d": owner_id, "status": "deleted", "category": category}
 
         if completed:
             query["status"] = "completed"
-        
+
         return await Habit.find(query).skip(skip).limit(limit_val).sort("+created_at").to_list()
 
     except Exception as error:
-        logger.error(f"Unexpected error in get_all_habits_service: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in get_all_habits_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-async def get_habit_service(
-    habit_id:   BeanieObjectId,
-    owner_id:   BeanieObjectId
-) -> Habit:
-    
+async def get_habit_service(habit_id: BeanieObjectId, owner_id: BeanieObjectId) -> Habit:
     """Retrieves a specific habit by its ID for a user.
 
     This service fetches a single habit that belongs to the specified user
@@ -178,42 +132,31 @@ async def get_habit_service(
         HTTPException 404: If habit is not found or doesn't belong to user.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        
         existing_habit: Habit | None = await Habit.find_one(
-            Habit.id == habit_id,
-            Habit.owner_id == owner_id,
-            Habit.status != "deleted"   
+            Habit.id == habit_id, Habit.owner_id == owner_id, Habit.status != "deleted"
         )
 
         if not existing_habit:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Habit not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+
         return existing_habit
-    
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
 async def get_habits_by_category_service(
-    owner_id:       BeanieObjectId,
-    category:       HabitCategory
+    owner_id: BeanieObjectId, category: HabitCategory
 ) -> List[Habit]:
-    
     """Retrieves all habits belonging to a specific category.
 
     This service returns all active habits (not deleted) for a user that
@@ -228,36 +171,32 @@ async def get_habits_by_category_service(
             sorted by creation date ascending.
 
     Raises:
-        HTTPException 500: If an internal server error occurs during 
+        HTTPException 500: If an internal server error occurs during
             database operations.
     """
-    
+
     try:
-        
-        return await Habit.find(
-            Habit.owner_id == owner_id, 
-            Habit.status != "deleted",
-            Habit.category == category
-        ).sort("created_at").to_list()
+        return (
+            await Habit.find(
+                Habit.owner_id == owner_id, Habit.status != "deleted", Habit.category == category
+            )
+            .sort("created_at")
+            .to_list()
+        )
 
     except Exception as error:
-        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in get_habit_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-
 async def update_habit_service(
-    habit_id:             BeanieObjectId, 
-    owner_id:             BeanieObjectId,
-    update_habit:   HabitUpdate,
+    habit_id: BeanieObjectId,
+    owner_id: BeanieObjectId,
+    update_habit: HabitUpdate,
 ) -> Habit:
-    
     """Updates an existing habit with new information.
 
     This service allows users to update their habit details including
@@ -275,54 +214,36 @@ async def update_habit_service(
         HTTPException 404: If habit is not found or doesn't belong to user.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        
         existing_habit: Habit | None = await Habit.find_one(
-            Habit._class_id == habit_id,
-            Habit.owner_id == owner_id,
-            Habit.status != "deleted"
+            Habit._class_id == habit_id, Habit.owner_id == owner_id, Habit.status != "deleted"
         )
 
         if not existing_habit:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Habit not found"
-            )
-        
-        update_data: Dict[str, Any] = update_habit.model_dump(
-            exclude_unset = True, 
-            exclude_none = True
-        )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
 
-        update_data.update({
-            "updated_at": datetime.now(timezone.utc)
-        })
-        
+        update_data: Dict[str, Any] = update_habit.model_dump(exclude_unset=True, exclude_none=True)
+
+        update_data.update({"updated_at": datetime.now(timezone.utc)})
+
         await existing_habit.set(**update_data)
-        
+
         await existing_habit.sync()
-        
+
         return existing_habit
-    
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in update_habit_service: {error}", exc_info = True)
+        logger.error(f"Unexpected error in update_habit_service: {error}", exc_info=True)
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )    
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
-
-
-async def delete_habit_service(
-    habit_id:   BeanieObjectId,
-    owner_id:   BeanieObjectId
-) -> Response:
-    
+async def delete_habit_service(habit_id: BeanieObjectId, owner_id: BeanieObjectId) -> Response:
     """Permanently deletes a habit (soft delete).
 
     This service marks a habit as deleted by updating its status to 'deleted'.
@@ -339,46 +260,33 @@ async def delete_habit_service(
         HTTPException 404: If habit is not found or doesn't belong to user.
         HTTPException 500: If an internal server error occurs.
     """
-    
-    try:
-    
-        existing_habit: Habit | None = await Habit.find_one(
-            Habit.id == habit_id,
-            Habit.owner_id == owner_id,
-            Habit.status != "deleted"
-        )
-        
-        if not existing_habit:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Habit not found"
-            )
-        
-        await existing_habit.set({
-            "status": "deleted"
-        })
 
-        return Response(status_code = status.HTTP_204_NO_CONTENT)
-    
+    try:
+        existing_habit: Habit | None = await Habit.find_one(
+            Habit.id == habit_id, Habit.owner_id == owner_id, Habit.status != "deleted"
+        )
+
+        if not existing_habit:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+
+        await existing_habit.set({"status": "deleted"})
+
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     except HTTPException:
         raise
-    
-    except Exception as error:
-        logger.error(f"Unexpected error in delete_habit_service: {error}", exc_info = True)
-        
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-    
 
+    except Exception as error:
+        logger.error(f"Unexpected error in delete_habit_service: {error}", exc_info=True)
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def archive_habit_service(
-    habit_id:   BeanieObjectId,
-    owner_id:   BeanieObjectId
+    habit_id: BeanieObjectId, owner_id: BeanieObjectId
 ) -> Dict[str, str]:
-    
     """Archives a habit to remove it from the active list.
 
     This service moves a habit to the archived status, hiding it from
@@ -397,46 +305,31 @@ async def archive_habit_service(
     """
 
     try:
-
         habit: Habit | None = await Habit.find_one(
-            Habit.id == habit_id,
-            Habit.owner_id == owner_id,
-            Habit.status != "deleted"
+            Habit.id == habit_id, Habit.owner_id == owner_id, Habit.status != "deleted"
         )
-        
-        if not habit:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Habit not found"
-            )
-        
-        await habit.set({
-            "status": "archived"
-        })
 
-        return {
-            "message": "Habit archived successfully"
-        }
+        if not habit:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+
+        await habit.set({"status": "archived"})
+
+        return {"message": "Habit archived successfully"}
 
     except HTTPException:
         raise
-    
-    except Exception as error:
-        logger.error(f"Unexpected error in archive_habit_service: {error}", exc_info = True)
-        
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-    
 
+    except Exception as error:
+        logger.error(f"Unexpected error in archive_habit_service: {error}", exc_info=True)
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def unarchive_habit_service(
-    habit_id:   BeanieObjectId,
-    owner_id:   BeanieObjectId
+    habit_id: BeanieObjectId, owner_id: BeanieObjectId
 ) -> Dict[str, str]:
-    
     """Restores an archived habit to the active list.
 
     This service moves a habit from archived status back to active,
@@ -453,48 +346,33 @@ async def unarchive_habit_service(
         HTTPException 404: If habit is not found or doesn't belong to user.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
         habit: Habit | None = await Habit.find_one(
-            Habit.id == habit_id,
-            Habit.owner_id == owner_id,
-            Habit.status != "archived"
+            Habit.id == habit_id, Habit.owner_id == owner_id, Habit.status != "archived"
         )
-        
+
         if not habit:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Habit not found"
-            )
-        
-        await habit.set({
-            "status": "active"
-        })
-     
-        return {
-            "message": "Habit archived successfully"
-        }
-    
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Habit not found")
+
+        await habit.set({"status": "active"})
+
+        return {"message": "Habit archived successfully"}
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in unarchive_habit_service: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in unarchive_habit_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )   
-
-
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def get_archived_habits_service(
-    owner_id:   BeanieObjectId,
-    page:       int,
-    limit:      int
+    owner_id: BeanieObjectId, page: int, limit: int
 ) -> List[Habit]:
-
     """Retrieves all archived habits for a user with pagination.
 
     This service returns a paginated list of all habits that have been
@@ -510,25 +388,25 @@ async def get_archived_habits_service(
             ascending.
 
     Raises:
-        HTTPException 500: If an internal server error occurs during 
+        HTTPException 500: If an internal server error occurs during
             database operations.
     """
 
     try:
-
         skip, limit_val = paginate(page, limit)
 
-        return await Habit.find(
-            Habit.owner_id == owner_id,
-            Habit.status == "archived"
-        ).skip(skip).limit(limit_val).sort("+created_at").to_list()
+        return (
+            await Habit.find(Habit.owner_id == owner_id, Habit.status == "archived")
+            .skip(skip)
+            .limit(limit_val)
+            .sort("+created_at")
+            .to_list()
+        )
 
     except HTTPException:
         raise
 
     except Exception as error:
-
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )

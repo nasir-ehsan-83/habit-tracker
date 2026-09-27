@@ -1,67 +1,42 @@
-from fastapi import (
-    APIRouter, 
-    Depends, 
-    Request, 
-    Response,
-    Body,
-    status
-)
-from fastapi.security.oauth2 import OAuth2PasswordRequestForm
-from typing import (
-    Annotated, 
-    Any, 
-    Dict
-)
+from typing import Annotated, Any, Dict
 
+from fastapi import APIRouter, Body, Depends, Request, Response, status
+from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from pydantic import EmailStr
 
-from app.utils import limiter
-from app.dependencies import get_current_user 
-from app.schemas import (
-    UserCreate,
-    UserPrivateOut,
-    Token, 
-    TokenData,
-    VerifyEmail,
-    ResetPassword
-)
+from app.dependencies import get_current_user
 from app.models import User
+from app.schemas import ResetPassword, Token, TokenData, UserCreate, UserPrivateOut, VerifyEmail
 from app.services.auth_service import (
     create_user_service,
     delete_account_service,
     forget_password_service,
-    login_service, 
+    login_service,
     logout_service,
-    refresh_token_service, 
+    refresh_token_service,
     reset_password_service,
-    verify_email_service
+    verify_email_service,
 )
+from app.utils import limiter
 
-
-
-
-router = APIRouter(
-    prefix = "/api/auth",
-    tags = ["Auth"]
-)
-
-
+router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
 @router.post(
-    '/register',
-    response_model = UserPrivateOut,
-    status_code = status.HTTP_201_CREATED,
-    summary = "Register a new user",
-    description = "Creates a new user account with the provided credentials."
+    "/register",
+    response_model=UserPrivateOut,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new user",
+    description="Creates a new user account with the provided credentials.",
 )
-@limiter.limit('3/minute')
+@limiter.limit("3/minute")
 async def create_user_route(
-    request:    Request,
-    response:   Response,
-    user_in:    Annotated[UserCreate, Body(..., description = "User registration data including email, password, ...")]
+    request: Request,
+    response: Response,
+    user_in: Annotated[
+        UserCreate, Body(..., description="User registration data including email, password, ...")
+    ],
 ) -> User:
-    
     """Registers a new user account.
 
     This endpoint handles user registration by validating the provided
@@ -93,21 +68,18 @@ async def create_user_route(
     return await create_user_service(user_in)
 
 
-
-
 @router.post(
-    '/login',
-    response_model = Token,
-    summary = "Authenticate user",
-    description = "Authenticates a user with email and password. Returns JWT access and refresh tokens upon successful authentication."
+    "/login",
+    response_model=Token,
+    summary="Authenticate user",
+    description="Authenticates a user with email and password. Returns JWT access and refresh tokens upon successful authentication.",
 )
-@limiter.limit('5/minute')
+@limiter.limit("5/minute")
 async def login_route(
-    request:            Request,
-    response:           Response,
-    user_credential:    Annotated[OAuth2PasswordRequestForm, Depends()]
+    request: Request,
+    response: Response,
+    user_credential: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Dict[str, Any]:
-    
     """Authenticates a user and returns access tokens.
 
     This endpoint validates user credentials and issues JWT access and
@@ -139,21 +111,18 @@ async def login_route(
     return await login_service(response, user_credential)
 
 
-
-
 @router.get(
-    '/refresh',
-    response_model = Token,
-    summary = "Refresh access token",
-    description = "Generates a new access token using a valid refresh token. The refresh token must be present in cookies."
+    "/refresh",
+    response_model=Token,
+    summary="Refresh access token",
+    description="Generates a new access token using a valid refresh token. The refresh token must be present in cookies.",
 )
-@limiter.limit('5/minute')
+@limiter.limit("5/minute")
 async def refresh_token_route(
-    request:        Request,
-    response:       Response,
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    request: Request,
+    response: Response,
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> Dict[str, Any]:
-    
     """Refreshes the access token.
 
     This endpoint generates a new access token using the refresh token
@@ -183,20 +152,17 @@ async def refresh_token_route(
     return await refresh_token_service(request)
 
 
-
-
 @router.get(
-    '/logout',
-    status_code = status.HTTP_200_OK,
-    summary = "Logout user",
-    description = "Logs out the currently authenticated user by clearing authentication cookies and invalidating the session."
+    "/logout",
+    status_code=status.HTTP_200_OK,
+    summary="Logout user",
+    description="Logs out the currently authenticated user by clearing authentication cookies and invalidating the session.",
 )
 async def logout_route(
-    request:        Request,
-    response:       Response,
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    request: Request,
+    response: Response,
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ):
-    
     """Logs out the authenticated user.
 
     This endpoint clears the authentication cookies and performs any
@@ -223,20 +189,17 @@ async def logout_route(
     return await logout_service(request)
 
 
-
-
 @router.delete(
-    '/delete-account',
-    status_code = status.HTTP_204_NO_CONTENT,
-    summary = "Delete user account",
-    description = "Permanently deletes the currently authenticated user's account and all associated data."
+    "/delete-account",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete user account",
+    description="Permanently deletes the currently authenticated user's account and all associated data.",
 )
 async def delete_account_route(
-    request:        Request,
-    response:       Response,
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    request: Request,
+    response: Response,
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> Response:
-    
     """Permanently deletes the user's account.
 
     This endpoint removes the authenticated user's account and all
@@ -260,21 +223,18 @@ async def delete_account_route(
     """
 
     await delete_account_service(request)
-    return Response(status_code = status.HTTP_204_NO_CONTENT)
-
-
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
-    '/forget-password',
-    response_model = Dict[str, str],
-    summary = "Request password reset",
-    description = "Sends a password reset link to the user's registered email address."
+    "/forget-password",
+    response_model=Dict[str, str],
+    summary="Request password reset",
+    description="Sends a password reset link to the user's registered email address.",
 )
 async def forget_password_route(
-    email:  Annotated[EmailStr, Body(..., description = "Registered email address of the user")]
+    email: Annotated[EmailStr, Body(..., description="Registered email address of the user")],
 ) -> Dict[str, str]:
-    
     """Initiates the password reset process.
 
     This endpoint sends a password reset link to the user's email address
@@ -300,18 +260,15 @@ async def forget_password_route(
     return await forget_password_service(email)
 
 
-
-
 @router.post(
-    '/verify-email',
-    response_model = str,
-    summary = "Verify email address",
-    description = "Verifies the user's email address using a verification token sent to their email."
+    "/verify-email",
+    response_model=str,
+    summary="Verify email address",
+    description="Verifies the user's email address using a verification token sent to their email.",
 )
 async def verify_email_route(
-    data:   Annotated[VerifyEmail, Body(..., description = "Verification token data")]
+    data: Annotated[VerifyEmail, Body(..., description="Verification token data")],
 ) -> str:
-    
     """Verifies the user's email address.
 
     This endpoint validates the email verification token and marks the
@@ -338,18 +295,15 @@ async def verify_email_route(
     return await verify_email_service(data)
 
 
-
-
 @router.post(
-    '/reset-password',
-    response_model = UserPrivateOut,
-    summary = "Reset password",
-    description = "Resets the user's password using a valid reset token."
+    "/reset-password",
+    response_model=UserPrivateOut,
+    summary="Reset password",
+    description="Resets the user's password using a valid reset token.",
 )
 async def reset_password_route(
-    data:   Annotated[ResetPassword, Body(..., description = "Reset token and new password")]
+    data: Annotated[ResetPassword, Body(..., description="Reset token and new password")],
 ) -> User:
-    
     """Resets the user's password.
 
     This endpoint validates the reset token and updates the user's password

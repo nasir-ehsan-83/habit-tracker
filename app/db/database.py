@@ -1,16 +1,8 @@
+from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
-from beanie import init_beanie 
 
-from app.config import (
-    settings, 
-    logger
-)
-from app.models import (
-    User,
-    Habit,
-    Track,
-    UserPreference
-)
+from app.config import logger, settings
+from app.models import Habit, Track, User, UserPreference
 
 
 async def init_db():
@@ -26,13 +18,13 @@ async def init_db():
         client: AsyncIOMotorClient = AsyncIOMotorClient(settings.MONGO_URL)
 
         await init_beanie(
-            database = client[settings.DATABASE_NAME],  # type: ignore
-            document_models = [User, Habit, Track, UserPreference]
+            database=client[settings.DATABASE_NAME],  # type: ignore
+            document_models=[User, Habit, Track, UserPreference],
         )
 
         logger.info("Database initialized successfully")
 
     except Exception as error:
-        logger.critical(f"Database Initialization Failed: {error}", exc_info = True)
-        
+        logger.critical(f"Database Initialization Failed: {error}", exc_info=True)
+
         raise error

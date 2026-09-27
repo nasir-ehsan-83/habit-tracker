@@ -1,6 +1,6 @@
 import logging
-from logging.handlers import RotatingFileHandler
 import os
+from logging.handlers import RotatingFileHandler
 from typing import TextIO
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,7 +18,7 @@ LOG_FORMAT: str = "%(asctime)s - %(name)s - [%(levelname)s] - %(message)s"
 logger: logging.Logger = logging.getLogger()
 """Global logger instance for the application."""
 
-logger.setLevel(logging.DEBUG) 
+logger.setLevel(logging.DEBUG)
 
 if logger.hasHandlers():
     logger.handlers.clear()
@@ -31,10 +31,10 @@ console_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 logger.addHandler(console_handler)
 
 warning_file_handler: RotatingFileHandler = RotatingFileHandler(
-    filename = os.path.join(LOG_DIR, "security_audit.log"),
-    maxBytes = 5 * 1024 * 1024,
-    backupCount = 3,
-    encoding = "utf-8"
+    filename=os.path.join(LOG_DIR, "security_audit.log"),
+    maxBytes=5 * 1024 * 1024,
+    backupCount=3,
+    encoding="utf-8",
 )
 
 """File handler that logs WARNING level to security_audit.log with rotation.
@@ -47,10 +47,10 @@ warning_file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 logger.addHandler(warning_file_handler)
 
 error_file_handler: RotatingFileHandler = RotatingFileHandler(
-    filename = os.path.join(LOG_DIR, "errors.log"),
-    maxBytes = 5 * 1024 * 1024,
-    backupCount = 5,
-    encoding = "utf-8"
+    filename=os.path.join(LOG_DIR, "errors.log"),
+    maxBytes=5 * 1024 * 1024,
+    backupCount=5,
+    encoding="utf-8",
 )
 
 """File handler that logs ERROR level to errors.log with rotation.
@@ -63,10 +63,10 @@ error_file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 logger.addHandler(error_file_handler)
 
 critical_file_handler: RotatingFileHandler = RotatingFileHandler(
-    filename = os.path.join(LOG_DIR, "critical.log"),
-    maxBytes = 5 * 1024 * 1024,
-    backupCount = 5,
-    encoding = "utf-8"
+    filename=os.path.join(LOG_DIR, "critical.log"),
+    maxBytes=5 * 1024 * 1024,
+    backupCount=5,
+    encoding="utf-8",
 )
 
 """File handler that logs CRITICAL level to critical.log with rotation.

@@ -1,5 +1,6 @@
 from typing import Tuple
 
+
 def paginate(page_in: int = 1, limit_in: int = 10) -> Tuple[int, int]:
     """Calculate pagination skip and limit values.
 
@@ -16,9 +17,9 @@ def paginate(page_in: int = 1, limit_in: int = 10) -> Tuple[int, int]:
         skip, limit = paginate(2, 15)  # Returns: (15, 15)
     """
     page: int = min(max(1, page_in), 10)
-    
+
     limit: int = min(max(1, limit_in), 50)
-    
+
     skip: int = (page - 1) * limit
-        
+
     return skip, limit

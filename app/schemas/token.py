@@ -1,26 +1,18 @@
 from beanie import BeanieObjectId
-from pydantic import (
-    BaseModel,
-    Field,
-    field_validator
-)
+from pydantic import BaseModel, Field, field_validator
 
 
 class Token(BaseModel):
     """Token response model for authentication."""
 
-    access_token: str = Field(
-        ...,
-        min_length = 1,
-        description = "JWT access token for authentication"
-    )
+    access_token: str = Field(..., min_length=1, description="JWT access token for authentication")
     """JWT access token."""
 
     token_type: str = Field(
-        default = "bearer",
-        min_length = 1,
-        max_length = 20,
-        description = "Type of the token (e.g., bearer, refresh)"
+        default="bearer",
+        min_length=1,
+        max_length=20,
+        description="Type of the token (e.g., bearer, refresh)",
     )
     """Token type (bearer, refresh)."""
 
@@ -44,17 +36,11 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Decoded token payload data."""
 
-    id: BeanieObjectId = Field(
-        ...,
-        description = "User ID stored in the token payload"
-    )
+    id: BeanieObjectId = Field(..., description="User ID stored in the token payload")
     """User ID from token payload."""
 
     role: str = Field(
-        ...,
-        min_length = 1,
-        max_length = 20,
-        description = "User role (e.g., admin, user, moderator)"
+        ..., min_length=1, max_length=20, description="User role (e.g., admin, user, moderator)"
     )
     """User role from token payload."""
 

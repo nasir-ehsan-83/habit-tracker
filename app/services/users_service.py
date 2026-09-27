@@ -1,38 +1,17 @@
-from typing import (
-    Any,
-    Dict,
-    List, 
-    Tuple
-)
-from fastapi import (
-    HTTPException, 
-    status
-)
-from datetime import (
-    datetime, 
-    timezone
-)
-from beanie import BeanieObjectId
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Tuple
 
+from beanie import BeanieObjectId
+from fastapi import HTTPException, status
+
+from app.config import logger
 from app.core import hash_password
-from app.config import logger 
-from app.models import (
-    User,
-    Habit,
-    UserPreference
-)
-from app.schemas import (
-    UserUpdate,
-    PreferenceUpdate    
-)
+from app.models import Habit, User, UserPreference
+from app.schemas import PreferenceUpdate, UserUpdate
 from app.services.habits_service import get_all_habits_service
 
 
-
-async def get_user_service(
-    id: BeanieObjectId
-) -> User:
-    
+async def get_user_service(id: BeanieObjectId) -> User:
     """Retrieves a user by their unique identifier.
 
     This service fetches a user document from the database using the
@@ -48,41 +27,29 @@ async def get_user_service(
         HTTPException 404: If user is not found or not active.
         HTTPException 500: If an internal server error occurs.
     """
-    
-    try:
 
+    try:
         user: User | None = await User.find_one(
-            User.id == BeanieObjectId(id),
-            User.status == "active"
+            User.id == BeanieObjectId(id), User.status == "active"
         )
 
         if not user:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND, 
-                detail = "User not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
         return user
-    
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in get_user: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in get_user: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-async def update_user_service(
-    id:     BeanieObjectId, 
-    data:   UserUpdate
-) -> User:
-    
+async def update_user_service(id: BeanieObjectId, data: UserUpdate) -> User:
     """Updates a user's profile information.
 
     This service allows users to update their profile details such as
@@ -102,55 +69,39 @@ async def update_user_service(
     Note:
         Passwords are automatically hashed before storage for security.
     """
-    
+
     try:
         user: User | None = await User.find_one(
-            User.id == BeanieObjectId(id),
-            User.status == "active"
+            User.id == BeanieObjectId(id), User.status == "active"
         )
 
         if not user:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "User not found"
-            )
-        
-        update_data: Dict[str, Any] = data.model_dump(
-            exclude_unset = True, 
-            exclude_none = True
-        )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        update_data: Dict[str, Any] = data.model_dump(exclude_unset=True, exclude_none=True)
+
         if "password" in update_data:
             update_data["password"] = await hash_password(update_data["password"])
 
         update_data["updated_at"] = datetime.now(timezone.utc)
 
-        await user.set({ 
-            **update_data
-        })
-        
+        await user.set({**update_data})
+
         await user.sync()
         return user
-    
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in update_user: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in update_user: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-async def update_avatar_service(
-    id:     BeanieObjectId,
-    url:    str
-) -> User:
-    
+async def update_avatar_service(id: BeanieObjectId, url: str) -> User:
     """Updates a user's avatar/profile picture URL.
 
     This service allows users to change their profile picture by providing
@@ -173,43 +124,30 @@ async def update_avatar_service(
     """
 
     try:
-
         user: User | None = await User.find_one(
-            User.id == BeanieObjectId(id),
-            User.status == "active"
+            User.id == BeanieObjectId(id), User.status == "active"
         )
 
         if not user:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "User not found"
-            )
-        
-        await user.set({
-            "vavatar": url
-        })
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        await user.set({"vavatar": url})
         await user.sync()
 
         return user
 
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in update_avatar: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in update_avatar: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
-    
 
 
-    
-async def get_stats_service(
-    id:     BeanieObjectId
-) -> Tuple[User, List[Habit]]:
-    
+async def get_stats_service(id: BeanieObjectId) -> Tuple[User, List[Habit]]:
     """Retrieves comprehensive user statistics and habit data.
 
     This service returns both user information and all associated habits,
@@ -229,42 +167,31 @@ async def get_stats_service(
         This service uses get_all_habits_service to retrieve habits,
         which includes pagination and filtering capabilities.
     """
-    
+
     try:
         user: User | None = await User.find_one(
-            User.id == BeanieObjectId(id),
-            User.status == "active"
+            User.id == BeanieObjectId(id), User.status == "active"
         )
 
         if not user:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "User not found"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
         habits: List[Habit] = await get_all_habits_service(id)
 
         return user, habits
-    
 
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in get_stats: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in get_stats: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-async def get_preference_service(
-    owner_id: BeanieObjectId
-) -> UserPreference:
-    
+async def get_preference_service(owner_id: BeanieObjectId) -> UserPreference:
     """Retrieves the user's preferences and settings.
 
     This service returns all user preferences including notification
@@ -280,14 +207,15 @@ async def get_preference_service(
         HTTPException 404: If no preferences are found for the user.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == owner_id)
+        preference: UserPreference | None = await UserPreference.find_one(
+            UserPreference.owner_id == owner_id
+        )
 
         if not preference:
             raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "User preferences not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User preferences not found"
             )
 
         return preference
@@ -296,21 +224,16 @@ async def get_preference_service(
         raise
 
     except Exception as error:
-        logger.error(f"Unexpected error in get_preference: {error}", exc_info = True)
-        
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-        
+        logger.error(f"Unexpected error in get_preference: {error}", exc_info=True)
 
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def update_preference_service(
-    user_id: BeanieObjectId,
-    preference_data: PreferenceUpdate
+    user_id: BeanieObjectId, preference_data: PreferenceUpdate
 ) -> UserPreference:
-    
     """Updates the user's preferences and settings.
 
     This service allows users to customize their application experience
@@ -331,17 +254,18 @@ async def update_preference_service(
         If preferences don't exist, consider creating them instead of
         raising an exception. This could be implemented as an upsert operation.
     """
-    
+
     try:
-        preference: UserPreference | None = await UserPreference.find_one(UserPreference.owner_id == user_id)
+        preference: UserPreference | None = await UserPreference.find_one(
+            UserPreference.owner_id == user_id
+        )
 
         if not preference:
             raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "User preferences not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="User preferences not found"
             )
 
-        update_dict: Dict[str, Any] = preference_data.model_dump(exclude_unset = True)
+        update_dict: Dict[str, Any] = preference_data.model_dump(exclude_unset=True)
 
         await preference.set(update_dict)
 
@@ -351,9 +275,8 @@ async def update_preference_service(
         raise
 
     except Exception as error:
-        logger.error(f"Unexpected error in update_preference: {error}", exc_info = True)
-        
+        logger.error(f"Unexpected error in update_preference: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )

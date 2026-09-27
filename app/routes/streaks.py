@@ -1,50 +1,30 @@
 from typing import Annotated
+
 from beanie import BeanieObjectId
-from fastapi import (
-    APIRouter,
-    Depends,
-    Query
-)
+from fastapi import APIRouter, Depends, Query
 
-from app.dependencies import (
-    get_current_user,
-    required_role
-)
-from app.schemas import (
-    TokenData,
-    CurrentStreakOut,
-    BestStreakOut
-)
-from app.services.streaks_service import (
-    get_current_streak_service,
-    get_best_streak_service
-)
-
-
-
+from app.dependencies import get_current_user, required_role
+from app.schemas import BestStreakOut, CurrentStreakOut, TokenData
+from app.services.streaks_service import get_best_streak_service, get_current_streak_service
 
 router: APIRouter = APIRouter(
-    prefix = '/api/streak',
-    tags = ["Streak"],
-    dependencies = [
-        Depends(required_role(["USER"]))
-    ]
+    prefix="/api/streak", tags=["Streak"], dependencies=[Depends(required_role(["USER"]))]
 )
-
-
 
 
 @router.get(
-    '/current',
-    response_model = CurrentStreakOut,
-    summary = "Retrieve current streak",
-    description = "Fetches the current active streak for a specific habit, showing how many consecutive days the user has completed the habit."
+    "/current",
+    response_model=CurrentStreakOut,
+    summary="Retrieve current streak",
+    description="Fetches the current active streak for a specific habit, showing how many consecutive days the user has completed the habit.",
 )
 async def get_current_streak_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    habit_id:       Annotated[BeanieObjectId, Query(description = "The MongoDB ObjectId of the habit to check the current streak for.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    habit_id: Annotated[
+        BeanieObjectId,
+        Query(description="The MongoDB ObjectId of the habit to check the current streak for."),
+    ],
 ) -> CurrentStreakOut:
-    
     """Retrieves the current active streak for a specific habit.
 
     This endpoint calculates and returns the user's current consecutive
@@ -74,19 +54,19 @@ async def get_current_streak_route(
     return await get_current_streak_service(current_user.id, habit_id)
 
 
-
-
 @router.get(
-    '/best',
-    response_model = BestStreakOut,
-    summary = "Retrieve best streak",
-    description = "Fetches the user's all-time best streak for a specific habit, showing their highest consecutive completion record."
+    "/best",
+    response_model=BestStreakOut,
+    summary="Retrieve best streak",
+    description="Fetches the user's all-time best streak for a specific habit, showing their highest consecutive completion record.",
 )
 async def get_best_streak_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    habit_id:       Annotated[BeanieObjectId, Query(description = "The MongoDB ObjectId of the habit to check the best streak for.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    habit_id: Annotated[
+        BeanieObjectId,
+        Query(description="The MongoDB ObjectId of the habit to check the best streak for."),
+    ],
 ) -> BestStreakOut:
-    
     """Retrieves the user's all-time best streak for a specific habit.
 
     This endpoint calculates and returns the user's longest consecutive

@@ -1,32 +1,16 @@
 from datetime import date
-from typing import (
-    Any, 
-    Dict,
-    List
-)
-from beanie import BeanieObjectId
-from fastapi import (
-    HTTPException,
-    Response,
-    status
-)
+from typing import Any, Dict, List
 
-from app.schemas import (
-    TrackCreate,
-    TrackUpdate,
-    MissedDaysResponse
-)
+from beanie import BeanieObjectId
+from fastapi import HTTPException, Response, status
+
 from app.config import logger
 from app.models import Track
+from app.schemas import MissedDaysResponse, TrackCreate, TrackUpdate
 from app.services.streaks_service import update_streak_service
 
 
-
-async def create_track_service(
-    owner_id: BeanieObjectId,
-    track_in: TrackCreate
-) -> Track:
-    
+async def create_track_service(owner_id: BeanieObjectId, track_in: TrackCreate) -> Track:
     """Creates a new track record for a habit completion.
 
     This service creates a track record for a habit completion on a specific date.
@@ -34,7 +18,7 @@ async def create_track_service(
 
     Args:
         owner_id: The MongoDB ObjectId of the user creating the track.
-        track_in: Track creation data 
+        track_in: Track creation data
 
     Returns:
         Track: The created track record with all fields populated.
@@ -48,66 +32,51 @@ async def create_track_service(
         This service automatically calls update_streak_service to maintain
         the user's streak consistency.
     """
-    
+
     try:
-        track_data: Dict[str, Any] = track_in.model_dump(exclude_unset = True)
+        track_data: Dict[str, Any] = track_in.model_dump(exclude_unset=True)
         track_date: date | None = track_data.get("date")
-        
+
         if track_date is None:
-            raise HTTPException(
-                status_code = status.HTTP_400_BAD_REQUEST,
-                detail = "Date is required"
-            )
-        
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Date is required")
+
         query: Dict[str, BeanieObjectId | date] = {
             "owner_id": owner_id,
             "habit_id": track_in.habit_id,
-            "date": track_date
+            "date": track_date,
         }
 
         track: Track | None = await Track.find_one(query)
 
         if track:
             raise HTTPException(
-                status_code = status.HTTP_409_CONFLICT,
-                detail = "Track already exists for this date"
+                status_code=status.HTTP_409_CONFLICT, detail="Track already exists for this date"
             )
-        
-        new_track: Track = Track(
-            **track_data,
-            owner_id = owner_id
+
+        new_track: Track = Track(**track_data, owner_id=owner_id)
+
+        created_track: Track = await new_track.insert()  # type: ignore
+
+        await update_streak_service(
+            owner_id=owner_id, habit_id=track_in.habit_id, track_date=track_date
         )
 
-        created_track: Track = await new_track.insert() # type: ignore
-        
-        await update_streak_service(
-            owner_id = owner_id,
-            habit_id = track_in.habit_id,
-            track_date = track_date
-        )
-        
         return created_track
 
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in create_track_service: {error}", exc_info = True)
-       
+        logger.error(f"Unexpected error in create_track_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
 async def update_track_service(
-    id: BeanieObjectId,
-    owner_id: BeanieObjectId,
-    updated_data: TrackUpdate
+    id: BeanieObjectId, owner_id: BeanieObjectId, updated_data: TrackUpdate
 ) -> Track:
-    
     """Updates an existing track record.
 
     This service allows users to modify their habit tracking records,
@@ -125,20 +94,14 @@ async def update_track_service(
         HTTPException 404: If the track is not found.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        track: Track | None = await Track.find_one(
-            Track.id == id,
-            Track.owner_id == owner_id
-        )
+        track: Track | None = await Track.find_one(Track.id == id, Track.owner_id == owner_id)
 
         if not track:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Track not found"
-            )
-        
-        new_data: Dict[str, Any] = updated_data.model_dump(exclude_unset = True)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Track not found")
+
+        new_data: Dict[str, Any] = updated_data.model_dump(exclude_unset=True)
 
         await track.set(new_data)
 
@@ -146,23 +109,16 @@ async def update_track_service(
 
     except HTTPException:
         raise
-    
+
     except Exception as error:
-        logger.error(f"Unexpected error in update_track_service: {error}", exc_info = True)
-    
+        logger.error(f"Unexpected error in update_track_service: {error}", exc_info=True)
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
-async def delete_track_service(
-    id: BeanieObjectId,
-    owner_id: BeanieObjectId
-) -> Response:
-    
+async def delete_track_service(id: BeanieObjectId, owner_id: BeanieObjectId) -> Response:
     """Permanently deletes a track record.
 
     This service removes a track record from the system. This action
@@ -180,47 +136,37 @@ async def delete_track_service(
         HTTPException 403: If the user doesn't have permission to delete the track.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
         track: Track | None = await Track.get(id)
 
         if not track:
-            raise HTTPException(
-                status_code = status.HTTP_404_NOT_FOUND,
-                detail = "Track not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Track not found")
 
         if track.owner_id != owner_id:
             raise HTTPException(
-                status_code = status.HTTP_403_FORBIDDEN,
-                detail = "You do not have permission to delete this track"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete this track",
             )
-        
-        await track.delete() # type: ignore
 
-        return Response(status_code = status.HTTP_204_NO_CONTENT)
-    
+        await track.delete()  # type: ignore
+
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     except HTTPException:
         raise
 
     except Exception as error:
-        logger.error(f"Unexpected error in delete_track_service: {error}", exc_info = True)
+        logger.error(f"Unexpected error in delete_track_service: {error}", exc_info=True)
 
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )
 
 
-
-
 async def get_daily_tracks_service(
-    owner_id:       BeanieObjectId,
-    habit_id:       BeanieObjectId | None,
-    target_date:    date
-
+    owner_id: BeanieObjectId, habit_id: BeanieObjectId | None, target_date: date
 ) -> List[Track]:
-    
     """Retrieves all tracks for a specific date.
 
     This service returns all habit tracking records for a given date,
@@ -238,13 +184,9 @@ async def get_daily_tracks_service(
     Raises:
         HTTPException 500: If an internal server error occurs.
     """
-    
-    try:
-        query: Dict[str, BeanieObjectId | date] = {
-            "owner_id": owner_id,
-            "date": target_date
 
-        }
+    try:
+        query: Dict[str, BeanieObjectId | date] = {"owner_id": owner_id, "date": target_date}
 
         if habit_id is not None:
             query["habit_id"] = habit_id
@@ -252,28 +194,21 @@ async def get_daily_tracks_service(
         tracks: List[Track] = await Track.find(query).to_list()
 
         return tracks
-    
+
     except HTTPException:
         raise
-    
-    except Exception as error:
-        logger.error(f"Unexpected error in get_daily_tracks_service: {error}", exc_info = True)
-    
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-    
 
+    except Exception as error:
+        logger.error(f"Unexpected error in get_daily_tracks_service: {error}", exc_info=True)
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def get_track_history_service(
-    owner_id: BeanieObjectId,
-    habit_id: BeanieObjectId,
-    from_date: date,
-    to_date: date
+    owner_id: BeanieObjectId, habit_id: BeanieObjectId, from_date: date, to_date: date
 ) -> List[Track]:
-    
     """Retrieves track history for a specific habit within a date range.
 
     This service provides a chronological history of all tracks for a
@@ -293,46 +228,38 @@ async def get_track_history_service(
         HTTPException 400: If the date range is less than 7 days.
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
         if (to_date - from_date).days < 7:
             raise HTTPException(
-                status_code = status.HTTP_400_BAD_REQUEST,
-                detail = "Invalid date range. History range must be at least 7 days."
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date range. History range must be at least 7 days.",
             )
-        
+
         query: Dict[str, BeanieObjectId | Dict[str, date]] = {
             "owner_id": owner_id,
             "habit_id": habit_id,
-            "date": {
-                "$gte": from_date, 
-                "$lte": to_date
-            }
+            "date": {"$gte": from_date, "$lte": to_date},
         }
 
         tracks: List[Track] = await Track.find(query).to_list()
 
         return tracks
-    
+
     except HTTPException:
         raise
-    
-    except Exception as error:
-        logger.error(f"Unexpected error in get_track_history: {error}", exc_info = True)
-    
-        raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
-        )
-    
 
+    except Exception as error:
+        logger.error(f"Unexpected error in get_track_history: {error}", exc_info=True)
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
+        )
 
 
 async def get_missed_days_service(
-    owner_id: BeanieObjectId,
-    habit_id: BeanieObjectId | None
-) -> MissedDaysResponse: 
-    
+    owner_id: BeanieObjectId, habit_id: BeanieObjectId | None
+) -> MissedDaysResponse:
     """Retrieves a list of days where habit completions were missed.
 
     This service analyzes the user's tracking data to identify days
@@ -350,11 +277,9 @@ async def get_missed_days_service(
     Raises:
         HTTPException 500: If an internal server error occurs.
     """
-    
+
     try:
-        query: Dict[str, BeanieObjectId] = {
-            "owner_id": owner_id
-        }
+        query: Dict[str, BeanieObjectId] = {"owner_id": owner_id}
         response_data: Dict[str, BeanieObjectId | List[date]] = {}
 
         if habit_id:
@@ -363,19 +288,18 @@ async def get_missed_days_service(
 
         tracks: List[Track] = await Track.find(query).to_list()
 
-        missed_days_list: List[date] = [track.date for track in tracks] 
+        missed_days_list: List[date] = [track.date for track in tracks]
 
         response_data["missed_days"] = missed_days_list
 
-        return MissedDaysResponse(**response_data) # type: ignore
-        
+        return MissedDaysResponse(**response_data)  # type: ignore
+
     except HTTPException:
         raise
-    
+
     except Exception as error:
         logger.error(f"Unexpected error in get_missed_days_service: {error}", exc_info=True)
-        
+
         raise HTTPException(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail = "Internal server error"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error"
         )

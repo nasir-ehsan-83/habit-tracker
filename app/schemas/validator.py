@@ -1,25 +1,14 @@
-from pydantic import (
-    BaseModel, 
-    EmailStr,
-    Field,
-    field_validator
-)
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class VerifyEmail(BaseModel):
     """Request model for email verification."""
 
-    email:      EmailStr = Field(
-        ...,
-        description = "Email address to verify"
-    )
+    email: EmailStr = Field(..., description="Email address to verify")
     """Email address to verify."""
 
     verify_code: int = Field(
-        ...,
-        ge = 100000,
-        le = 999999,
-        description = "6-digit verification code sent to the email"
+        ..., ge=100000, le=999999, description="6-digit verification code sent to the email"
     )
     """6-digit verification code (100000-999999)."""
 
@@ -35,23 +24,16 @@ class VerifyEmail(BaseModel):
 class ResetPassword(BaseModel):
     """Request model for password reset."""
 
-    email:          EmailStr = Field(
-        ...,
-        description = "Email address of the user requesting password reset"
-    )
+    email: EmailStr = Field(..., description="Email address of the user requesting password reset")
     """Email address for password reset."""
 
-    new_password:   str = Field(
-        ...,
-        min_length = 8,
-        description = "New password for the user account (minimum 8 characters)"
+    new_password: str = Field(
+        ..., min_length=8, description="New password for the user account (minimum 8 characters)"
     )
     """New password (min 8 characters)."""
 
-    verify_token:   str = Field(
-        ...,
-        min_length = 1,
-        description = "Verification token received via email for password reset"
+    verify_token: str = Field(
+        ..., min_length=1, description="Verification token received via email for password reset"
     )
     """Verification token from email."""
 

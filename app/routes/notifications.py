@@ -1,62 +1,52 @@
 from typing import Annotated
+
 from beanie import BeanieObjectId
-from fastapi import (
-    APIRouter, 
-    Depends,
-    Body,
-    Path,
-    Query
-)
+from fastapi import APIRouter, Body, Depends, Path, Query
 
 from app.dependencies import get_current_user
 from app.schemas import (
+    MessageOut,
+    NotificationHistoryOut,
     ScheduleCreate,
     ScheduleOut,
-    TokenData,
-    MessageOut,
     ScheduleUpdate,
     SettingsOut,
     SettingsUpdate,
-    TestNotificationIn, 
+    TestNotificationIn,
     TestNotificationOut,
-    NotificationHistoryOut
+    TokenData,
 )
 from app.services.notifications_service import (
     create_schedule_service,
-    update_schedule_service,
     delete_schedule_service,
+    get_notification_history_service,
     get_settings_service,
-    update_settings_service,
     send_test_notification_service,
-    get_notification_history_service
+    update_schedule_service,
+    update_settings_service,
 )
-
-
-
 
 router: APIRouter = APIRouter(
-    prefix = '/api/notifications',
-    tags = ["Notifications"],
-    dependencies = [
-        Depends(get_current_user)
-    ]
+    prefix="/api/notifications", tags=["Notifications"], dependencies=[Depends(get_current_user)]
 )
-
-
 
 
 @router.post(
-    '/schedule',
-    response_model = ScheduleOut,
-    status_code = 201,
-    summary = "Create notification schedule",
-    description = "Creates a new notification schedule for the authenticated user with specified time, frequency, and ..."
+    "/schedule",
+    response_model=ScheduleOut,
+    status_code=201,
+    summary="Create notification schedule",
+    description="Creates a new notification schedule for the authenticated user with specified time, frequency, and ...",
 )
 async def create_schedule_route(
-    current_user:       Annotated[TokenData, Depends(get_current_user)],
-    schedule_in:        Annotated[ScheduleCreate, Body(description = "Schedule configuration details including time, frequency, and notification preferences.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    schedule_in: Annotated[
+        ScheduleCreate,
+        Body(
+            description="Schedule configuration details including time, frequency, and notification preferences."
+        ),
+    ],
 ) -> ScheduleOut:
-    
     """Creates a new notification schedule for the authenticated user.
 
     This endpoint allows users to set up scheduled notifications for their
@@ -70,10 +60,10 @@ async def create_schedule_route(
 
     Args:
         current_user: The authenticated user's token data.
-        schedule_in: Schedule configuration 
+        schedule_in: Schedule configuration
 
     Returns:
-        ScheduleOut: The created schedule with all details 
+        ScheduleOut: The created schedule with all details
     Raises:
         HTTPException 400: If schedule configuration is invalid.
         HTTPException 401: If user is not authenticated.
@@ -83,20 +73,21 @@ async def create_schedule_route(
     return await create_schedule_service(current_user.id, schedule_in)
 
 
-
-
 @router.put(
-    '/schedule/{schedule_id}',
-    response_model = MessageOut,
-    summary = "Update notification schedule",
-    description = "Updates an existing notification schedule with new configuration parameters."
+    "/schedule/{schedule_id}",
+    response_model=MessageOut,
+    summary="Update notification schedule",
+    description="Updates an existing notification schedule with new configuration parameters.",
 )
 async def update_schedule_route(
-    current_user:       Annotated[TokenData, Depends(get_current_user)],
-    schedule_id:        Annotated[BeanieObjectId, Path(description = "The MongoDB ObjectId of the schedule to update.")],
-    schedule_in:        Annotated[ScheduleUpdate, Body(description = "Updated schedule configuration fields.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    schedule_id: Annotated[
+        BeanieObjectId, Path(description="The MongoDB ObjectId of the schedule to update.")
+    ],
+    schedule_in: Annotated[
+        ScheduleUpdate, Body(description="Updated schedule configuration fields.")
+    ],
 ) -> MessageOut:
-    
     """Updates an existing notification schedule.
 
     This endpoint allows users to modify their notification schedules,
@@ -129,19 +120,18 @@ async def update_schedule_route(
     return await update_schedule_service(current_user.id, schedule_id, schedule_in)
 
 
-
-
 @router.delete(
-    '/schedule/{schedule_id}',
-    response_model = MessageOut,
-    summary = "Delete notification schedule",
-    description = "Permanently deletes an existing notification schedule by its unique identifier."
+    "/schedule/{schedule_id}",
+    response_model=MessageOut,
+    summary="Delete notification schedule",
+    description="Permanently deletes an existing notification schedule by its unique identifier.",
 )
 async def delete_schedule_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    schedule_id:    Annotated[BeanieObjectId, Path(description = "The MongoDB ObjectId of the schedule to delete.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    schedule_id: Annotated[
+        BeanieObjectId, Path(description="The MongoDB ObjectId of the schedule to delete.")
+    ],
 ) -> MessageOut:
-    
     """Permanently deletes a notification schedule.
 
     This endpoint removes a notification schedule from the system.
@@ -171,18 +161,15 @@ async def delete_schedule_route(
     return await delete_schedule_service(current_user.id, schedule_id)
 
 
-
-
 @router.get(
-    '/settings',
-    response_model = SettingsOut,
-    summary = "Retrieve notification settings",
-    description = "Fetches the current notification settings and preferences for the authenticated user."
+    "/settings",
+    response_model=SettingsOut,
+    summary="Retrieve notification settings",
+    description="Fetches the current notification settings and preferences for the authenticated user.",
 )
 async def get_settings_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
 ) -> SettingsOut:
-    
     """Retrieves the user's current notification settings.
 
     This endpoint returns all notification preferences including channels,
@@ -208,19 +195,18 @@ async def get_settings_route(
     return await get_settings_service(current_user.id)
 
 
-
-
 @router.put(
-    '/settings',
-    response_model = MessageOut,
-    summary = "Update notification settings",
-    description = "Updates the user's notification settings and preferences."
+    "/settings",
+    response_model=MessageOut,
+    summary="Update notification settings",
+    description="Updates the user's notification settings and preferences.",
 )
 async def update_settings_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    settings_in:    Annotated[SettingsUpdate, Body(description = "Updated notification settings fields.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    settings_in: Annotated[
+        SettingsUpdate, Body(description="Updated notification settings fields.")
+    ],
 ) -> MessageOut:
-    
     """Updates the user's notification settings.
 
     This endpoint allows users to customize their notification preferences
@@ -248,19 +234,19 @@ async def update_settings_route(
     return await update_settings_service(current_user.id, settings_in)
 
 
-
-
 @router.post(
-    '/test',
-    response_model = TestNotificationOut,
-    summary = "Send test notification",
-    description = "Sends a test notification to the user's configured channels to verify delivery."
+    "/test",
+    response_model=TestNotificationOut,
+    summary="Send test notification",
+    description="Sends a test notification to the user's configured channels to verify delivery.",
 )
 async def send_test_notification_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    test_in:        Annotated[TestNotificationIn, Body(description = "Test notification configuration including channel and message.")]
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    test_in: Annotated[
+        TestNotificationIn,
+        Body(description="Test notification configuration including channel and message."),
+    ],
 ) -> TestNotificationOut:
-    
     """Sends a test notification to verify user's notification setup.
 
     This endpoint allows users to test their notification channels
@@ -276,7 +262,7 @@ async def send_test_notification_route(
         current_user: The authenticated user's token data.
         test_in: Test configuration
     Returns:
-        TestNotificationOut: Test results 
+        TestNotificationOut: Test results
 
     Raises:
         HTTPException 400: If test configuration is invalid.
@@ -287,19 +273,23 @@ async def send_test_notification_route(
     return await send_test_notification_service(current_user.id, test_in)
 
 
-
-
 @router.get(
-    '/history',
-    response_model = NotificationHistoryOut,
-    summary = "Retrieve notification history",
-    description = "Fetches the user's notification history with pagination support."
+    "/history",
+    response_model=NotificationHistoryOut,
+    summary="Retrieve notification history",
+    description="Fetches the user's notification history with pagination support.",
 )
 async def get_notification_history_route(
-    current_user:   Annotated[TokenData, Depends(get_current_user)],
-    limit:          Annotated[int, Query(ge = 1, le = 100, description = "Maximum number of history records to return (1-100). Defaults to 20.")] = 20
+    current_user: Annotated[TokenData, Depends(get_current_user)],
+    limit: Annotated[
+        int,
+        Query(
+            ge=1,
+            le=100,
+            description="Maximum number of history records to return (1-100). Defaults to 20.",
+        ),
+    ] = 20,
 ) -> NotificationHistoryOut:
-    
     """Retrieves the user's notification history.
 
     This endpoint returns a paginated list of past notifications sent to the user,

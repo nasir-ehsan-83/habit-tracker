@@ -1,19 +1,12 @@
-from passlib.context import CryptContext
 from fastapi.concurrency import run_in_threadpool
+from passlib.context import CryptContext
 
-
-
-password_context = CryptContext(
-    schemes = ["bcrypt"], 
-    deprecated = "auto"
-)
+password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 """Password hashing context using bcrypt algorithm.
 
 Configured with bcrypt as the default scheme for secure password hashing.
 Auto-deprecated schemes will be handled automatically.
 """
-
-
 
 
 async def hash_password(password: str) -> str:
@@ -30,16 +23,9 @@ async def hash_password(password: str) -> str:
     """
     password_bytes: bytes = password.encode("utf-8")[:72]
 
-    password_truncated: str = password_bytes.decode(
-        "utf-8", 
-        errors = "ignore"
-    )
+    password_truncated: str = password_bytes.decode("utf-8", errors="ignore")
 
-    return await run_in_threadpool(
-        password_context.hash, 
-        password_truncated
-    )
-
+    return await run_in_threadpool(password_context.hash, password_truncated)
 
 
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -57,9 +43,5 @@ async def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     if not hashed_password:
         return False
-    
-    return await run_in_threadpool(
-        password_context.verify,
-        plain_password,
-        hashed_password
-    )
+
+    return await run_in_threadpool(password_context.verify, plain_password, hashed_password)

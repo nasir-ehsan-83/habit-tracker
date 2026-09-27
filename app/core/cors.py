@@ -1,8 +1,4 @@
-from typing import ( 
-    Dict,
-    Any
-)
-
+from typing import Any, Dict
 
 cors: Dict[str, Any] = {
     "allow_origins": [
@@ -11,7 +7,7 @@ cors: Dict[str, Any] = {
     ],
     "allow_credentials": True,
     "allow_methods": ["GET", "POST", "DELETE", "PATCH", "PUT"],
-    "allow_headers": ["*"]
+    "allow_headers": ["*"],
 }
 """
 CORS configuration for the FastAPI application.
